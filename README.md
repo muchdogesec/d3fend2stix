@@ -1,6 +1,5 @@
 # d3fend2stix
 
-
 ## Before you begin
 
 ![](docs/ctibutler.png)
