@@ -5,119 +5,6 @@ Added to all bundles
 
 https://raw.githubusercontent.com/muchdogesec/stix4doge/refs/heads/main/objects/marking-definition/d3fend2stix.json
 
-## SCOs (artifacts)
-
-The official d3fend repo contains the following mappings: https://d3fend.mitre.org/cad/docs/stix21mappings/
-
-```txt
-archive-ext d3f:ArchiveFile
-artifact  d3f:DigitalArtifact
-autonomous-system d3f:System
-directory d3f:Directory
-domain-name d3f:DomainName
-email-addr  d3f:Identifier
-email-message d3f:Email
-file  d3f:File
-http-request-ext  d3f:WebNetworkTraffic
-ipv4-addr d3f:IPAddress
-ipv6-addr d3f:IPAddress
-icmp-ext  d3f:NetworkTraffic
-mac-address d3f:Identifier
-mutex d3f:DigitalArtifact
-network-traffic d3f:NetworkTraffic
-ntfs-ext  d3f:FileSystem
-pdf-ext d3f:DocumentFile
-process d3f:Process
-raster-image-ext  d3f:DigitalArtifact
-socket-ext  d3f:NetworkTraffic
-software  d3f:Software
-tcp-ext d3f:NetworkTraffic
-url d3f:URL
-unix-account-ext  d3f:UserAccount
-user-account  d3f:UserAccount
-windows-pebinary-ext  d3f:ExecutableBinary
-windows-process-ext d3f:Process
-windows-registry-ext  d3f:WindowsRegistryKey
-windows-service-ext d3f:Service
-x509-certificate  d3f:CertificateFile
-```
-
-Here is an example of `d3f:CertificateFile`
-
-```json
-    {
-      "@id": "d3f:CertificateFile",
-      "@type": [
-        "owl:Class",
-        "owl:NamedIndividual"
-      ],
-      "d3f:contains": {
-        "@id": "d3f:Certificate"
-      },
-      "d3f:definition": "A file containing a digital certificate. In cryptography, a public key certificate (also known as a digital certificate or identity certificate) is an electronic document used to prove the ownership of a public key. The certificate includes information about the key, information about its owner's identity, and the digital signature of an entity that has verified the certificate's contents are correct. If the signature is valid, and the person examining the certificate trusts the signer, then they know they can use that key to communicate with its owner.",
-      "rdfs:isDefinedBy": {
-        "@id": "dbr:Public_key_certificate"
-      },
-      "rdfs:label": "Certificate File",
-      "rdfs:subClassOf": [
-        {
-          "@id": "d3f:File"
-        },
-        {
-          "@id": "_:Nd26d70fae05b4a5899554c863b85a132"
-        }
-      ]
-    },
-```
-
-The problem is SCOs need values, they cannot be conceptual. As such, need to model as Indicators vs. SCOs. We also need to hack the pattern a bit.
-
-```json
-{
-  "type": "indicator",
-  "spec_version": "2.1",
-  "id": "indicator--8e2e2d2b-17d4-4cbf-938f-98ee46b3cd3f",
-  "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
-  "created": "<d3f:release-date>",
-  "modified": "<d3f:release-date>",
-  "indicator_types": ["unknown"],
-  "name": "<rdfs:label>",
-  "description": "<d3f:definition>",
-  "pattern": "<@id>",
-  "pattern_type": "d3fend",
-  "valid_from": "<created>",
-  "external_references": [
-    {
-        "source_name": "mitre-d3fend",
-        "url": "https://d3fend.mitre.org/tactic/<@id>",
-        "external_id": "@id"
-      }
-  ],
-  "object_marking_refs": [
-      "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
-      "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22"
-  ]
-}
-```
-
-UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `@id`
-
-### Relationship
-
-On this part, see notes later;
-
-```json
-      "rdfs:subClassOf": [
-        {
-          "@id": "d3f:File"
-        },
-        {
-          "@id": "_:Nd26d70fae05b4a5899554c863b85a132"
-        }
-      ]
-    },
-```
-
 ## Matrix
 
 ```json
@@ -348,11 +235,11 @@ UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `@id`
     },
 ```
 
-Here the link to a tactic (`d3f:Detect`) and Indicator (`d3f:File`) is shown.
+Here the link to a tactic (`d3f:Detect`) and artifact (`d3f:File`) is shown both are indirect.
 
-Note, there is also a direct link from this object `d3f:DefensiveTechnique`. In this case , we should try and create a relationship with type `subClassOf`.
+Note, there is also a direct link from this object `d3f:DefensiveTechnique`. `d3f:DefensiveTechnique` should always be ignored.
 
-NOTE, some references like this will not exist (`d3f:DefensiveTechnique` is one). In such cases, we should ignore the missing object, and skip the generation of the relationship (both for direct and indirect)
+Here, 2 sros would be created, to d3f:File and to d3f:Detect
 
 Relationships are created like so;
 
@@ -363,7 +250,7 @@ Relationships are created like so;
   "created": "<source.created>",
   "modified": "<target.created>",
   "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
-  "relationship_type": "<owl:onProperty.@id> (ref) OR subClassOf (direct)",
+  "relationship_type": "<owl:onProperty.@id> (indirect) OR subClassOf (direct)",
   "source_ref": "<source.id>",
   "target_ref": "<target.id>",
   "description": "<source.name> <rleationship type> <target.name>",
@@ -384,6 +271,99 @@ Relationships are created like so;
       "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22"
   ]
 ```
+
+### Relationship targets to artifacts
+
+In the case of artifacts e.g. for `d3f:File` (not tactics/techniques, e.g. `d3f:Detect`).
+
+These artifact objects need to be created on the fly
+
+Here is an example of artifact `d3f:CertificateFile`
+
+```json
+    {
+      "@id": "d3f:CertificateFile",
+      "@type": [
+        "owl:Class",
+        "owl:NamedIndividual"
+      ],
+      "d3f:contains": {
+        "@id": "d3f:Certificate"
+      },
+      "d3f:definition": "A file containing a digital certificate. In cryptography, a public key certificate (also known as a digital certificate or identity certificate) is an electronic document used to prove the ownership of a public key. The certificate includes information about the key, information about its owner's identity, and the digital signature of an entity that has verified the certificate's contents are correct. If the signature is valid, and the person examining the certificate trusts the signer, then they know they can use that key to communicate with its owner.",
+      "rdfs:isDefinedBy": {
+        "@id": "dbr:Public_key_certificate"
+      },
+      "rdfs:label": "Certificate File",
+      "rdfs:subClassOf": [
+        {
+          "@id": "d3f:File"
+        },
+        {
+          "@id": "_:Nd26d70fae05b4a5899554c863b85a132"
+        }
+      ]
+    },
+```
+
+We Indicators to represent these (we need to hack the pattern a bit)
+
+```json
+{
+  "type": "indicator",
+  "spec_version": "2.1",
+  "id": "indicator--8e2e2d2b-17d4-4cbf-938f-98ee46b3cd3f",
+  "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
+  "created": "<d3f:release-date>",
+  "modified": "<d3f:release-date>",
+  "indicator_types": ["unknown"],
+  "name": "<rdfs:label>",
+  "description": "<d3f:definition>",
+  "pattern": "<@id>",
+  "pattern_type": "d3fend",
+  "valid_from": "<created>",
+  "external_references": [
+    {
+        "source_name": "mitre-d3fend",
+        "url": "https://d3fend.mitre.org/dao/artifact/<@id>",
+        "external_id": "@id"
+      }
+  ],
+  "object_marking_refs": [
+      "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
+      "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22"
+  ]
+}
+```
+
+UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `@id`
+
+Note artifacts also contain subclasses. We need to create Indicators and SROs for these
+
+```json
+      "rdfs:subClassOf": [
+        {
+          "@id": "d3f:File"
+        },
+        {
+          "@id": "_:Nd26d70fae05b4a5899554c863b85a132"
+        }
+```
+
+```json
+    {
+      "@id": "_:Nd26d70fae05b4a5899554c863b85a132",
+      "@type": "owl:Restriction",
+      "owl:onProperty": {
+        "@id": "d3f:contains"
+      },
+      "owl:someValuesFrom": {
+        "@id": "d3f:Certificate"
+      }
+    },
+```
+
+`d3f:File` is direct, `d3f:Certificate` is indirect
 
 ### Technique (level 1: specific)
 
@@ -454,6 +434,8 @@ Relationships are created like so;
       }
     },
 ```
+
+Here, 3 sros would be created, to d3f:FileAnalysis, d3f:DocumentFile, d3f:ExecutableFile
 
 Mapped in same way a level 0.
 
