@@ -5,7 +5,7 @@ Added to all bundles
 
 https://raw.githubusercontent.com/muchdogesec/stix4doge/refs/heads/main/objects/marking-definition/d3fend2stix.json
 
-## SCOs
+## SCOs (artifacts)
 
 The official d3fend repo contains the following mappings: https://d3fend.mitre.org/cad/docs/stix21mappings/
 
@@ -526,5 +526,5 @@ Note, see here `"d3f:FileContentAnalysis"` is a direct link and the object does 
 
 ## Shortfalls of this script
 
-* not all d3fend objects are converted to STIX. Only matrix, tactics, techniques and indicators are created
+* not all d3fend objects are converted to STIX. Only matrix, tactics, techniques and artifacts (indicators) are created
 * created and modified times are tied to version. Hence this script won't work properly with updates.
