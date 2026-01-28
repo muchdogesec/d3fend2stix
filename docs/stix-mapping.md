@@ -67,7 +67,7 @@ Identified where `@type` is `d3f:DefensiveTactic`
 	"created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
 	"name": "<rdfs:label>",
 	"description": "<d3f:definition>",
-  "x_mitre_deprecated": false,
+  "x_mitre_shortname": "lowercase <rdfs:label>",
 	"external_references": [
 		{
 	    	"source_name": "mitre-d3fend",
@@ -132,6 +132,16 @@ Identified where `rdfs:subClassOf.@id` is `d3f:DefensiveTechnique`
 	"aliases": [
 		"<d3f:synonyms>"
 	],
+  "x_mitre_domains": [
+    "d3fend"
+  ],
+  "x_mitre_is_subtechnique": "<if subclass of tactic is false, else true>",
+  "kill_chain_phases": [
+      {
+        "kill_chain_name": "d3fend",
+        "phase_name": "<tactic shortname>"
+      }
+   ],
 	"external_references": [
 		{
 	    	"source_name": "mitre-d3fend",
