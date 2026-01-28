@@ -260,10 +260,10 @@ Relationships are created like so;
   "created": "<source.created>",
   "modified": "<target.created>",
   "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
-  "relationship_type": "<owl:onProperty.@id> (indirect) OR subClassOf (direct)",
+  "relationship_type": "<d3fend OR modified relationship-type>",
   "source_ref": "<source.id>",
   "target_ref": "<target.id>",
-  "description": "<source.name> <rleationship type> <target.name>",
+  "description": "<source.name> <d3fend relationship-type> <target.name>",
   "external_references": [
     {
         "source_name": "mitre-d3fend",
@@ -275,6 +275,11 @@ Relationships are created like so;
         "url": "https://d3fend.mitre.org/technique/<target.@id>",
         "external_id": "<d3f:d3fend-id>"
     }
+    {
+        "source_name": "mitre-d3fend",
+        "description": "relationship-type",
+        "external_id": "<d3fend relationship-type>"
+    },
   ],
   "object_marking_refs": [
       "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
@@ -283,6 +288,12 @@ Relationships are created like so;
 ```
 
 UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `<source_ref>+<target_ref>+<relationship_type>`
+
+#### Relationship types
+
+To support the ATT&CK navigator, we need to include some standard relationships. This only applies to Sub-techniques -> Techniques, and Sub-techniques -> Sub-techniques. If not one of these joins, then the `relationship_type` in all places matches that from the d3fend file. Note, we do not need to include a relationship-type external_reference section for these objects.
+
+However if Sub-techniques -> Techniques, or Sub-techniques -> Sub-techniques we need to us the `relationship_type` = `subtechnique-of`. To ensure we don't lose the original definition, we should track the original relationship type in the description AND in external_references.
 
 ### Relationship targets to artifacts
 
