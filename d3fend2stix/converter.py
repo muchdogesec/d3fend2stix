@@ -132,8 +132,11 @@ class D3FENDConverter:
             kill_chain_phases=kill_chain_phases,
             external_references=external_refs,
             object_marking_refs=config.marking_refs,
-            x_mitre_domains=["d3fend"],
             **({"aliases": aliases} if aliases else {}),
+            x_mitre_domains=["d3fend"],
+            x_mitre_deprecated=False,
+            x_mitre_version="0.1",
+            x_mitre_modified_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             allow_custom=True,
         )
 
@@ -224,6 +227,9 @@ class D3FENDConverter:
             ],
             object_marking_refs=config.marking_refs,
             x_mitre_domains=["d3fend"],
+            x_mitre_deprecated=False,
+            x_mitre_version="0.1",
+            x_mitre_modified_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             allow_custom=True,
         )
 
@@ -261,6 +267,9 @@ class D3FENDConverter:
             ],
             object_marking_refs=config.marking_refs,
             x_mitre_domains=["d3fend"],
+            x_mitre_deprecated=False,
+            x_mitre_version="0.1",
+            x_mitre_modified_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             allow_custom=True,
         )
 
@@ -329,6 +338,8 @@ class D3FENDConverter:
             relationship_type=relationship_type,
             object_marking_refs=config.marking_refs,
             external_references=[source_stix['external_references'][0], target_stix['external_references'][0]],
+            x_mitre_deprecated=False,
+            x_mitre_modified_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             allow_custom=True,
         )
 
