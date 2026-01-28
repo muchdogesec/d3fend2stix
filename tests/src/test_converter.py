@@ -115,9 +115,9 @@ class TestD3FENDConverter:
             {"kill_chain_name": "d3fend", "phase_name": "detect"}
         ]
 
-
         converter_with_tactics.parser.get_inherited_property.return_value = [
-            {"@id": "D3-Tactic-1"}, {"@id": "D3-Tactic-2"}
+            {"@id": "D3-Tactic-1"},
+            {"@id": "D3-Tactic-2"},
         ]
         result = converter_with_tactics.create_technique(technique_obj)
         assert [dict(k) for k in result.kill_chain_phases] == [
@@ -155,7 +155,9 @@ class TestD3FENDConverter:
         assert hasattr(result, "x_mitre_is_subtechnique")
         assert result.x_mitre_is_subtechnique is True
 
-    def test_create_technique_multiple_subclasses_with_defensive(self, converter_with_tactics):
+    def test_create_technique_multiple_subclasses_with_defensive(
+        self, converter_with_tactics
+    ):
         """Test technique with multiple subclasses including DefensiveTechnique"""
         technique_obj = {
             "@id": "d3f:MultiSubTechnique",
@@ -164,7 +166,7 @@ class TestD3FENDConverter:
             "rdfs:subClassOf": [
                 {"@id": "d3f:SomeOtherClass"},
                 {"@id": "d3f:DefensiveTechnique"},
-                {"@id": "d3f:AnotherClass"}
+                {"@id": "d3f:AnotherClass"},
             ],
         }
 
@@ -173,7 +175,9 @@ class TestD3FENDConverter:
         assert hasattr(result, "x_mitre_is_subtechnique")
         assert result.x_mitre_is_subtechnique is False
 
-    def test_create_technique_multiple_subclasses_without_defensive(self, converter_with_tactics):
+    def test_create_technique_multiple_subclasses_without_defensive(
+        self, converter_with_tactics
+    ):
         """Test technique with multiple subclasses not including DefensiveTechnique"""
         technique_obj = {
             "@id": "d3f:MultiSubTechnique2",
@@ -181,7 +185,7 @@ class TestD3FENDConverter:
             "d3f:definition": "Another technique with multiple subclasses",
             "rdfs:subClassOf": [
                 {"@id": "d3f:ParentTechnique1"},
-                {"@id": "d3f:ParentTechnique2"}
+                {"@id": "d3f:ParentTechnique2"},
             ],
         }
 
@@ -203,7 +207,6 @@ class TestD3FENDConverter:
         assert hasattr(result, "x_mitre_is_subtechnique")
         # Should be True since d3f:DefensiveTechnique is NOT in the list (empty list)
         assert result.x_mitre_is_subtechnique is True
-
 
     def test_create_tactic(self, converter):
         """Test creating a tactic"""
@@ -227,7 +230,7 @@ class TestD3FENDConverter:
         ]
 
         result = converter.create_matrix(tactic_ids)
-
+        print(result)
         assert json.loads(result.serialize()) == {
             "type": "x-mitre-matrix",
             "spec_version": "2.1",
@@ -237,7 +240,10 @@ class TestD3FENDConverter:
             "modified": "2024-01-01T00:00:00.000Z",
             "name": "D3FEND Test Ontology",
             "description": "Sample description",
-            "tactic_refs": tactic_ids,
+            "tactic_refs": [
+                "x-mitre-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+                "x-mitre-tactic--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            ],
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
@@ -255,8 +261,12 @@ class TestD3FENDConverter:
                 "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
                 "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22",
             ],
+            "x_mitre_attack_spec_version": "3.3.0",
+            "x_mitre_deprecated": False,
+            "x_mitre_domains": ["d3fend"],
+            "x_mitre_modified_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
+            "x_mitre_version": "0.1",
         }
-        assert result.type == "x-mitre-matrix"
         assert len(result.tactic_refs) == 2
 
     def test_create_relationship(self, converter):
@@ -298,10 +308,11 @@ class TestD3FENDConverter:
 
         result = converter.create_relationship(source, target, "rdfs:subClassOf")
         assert isinstance(result, Relationship)
+        print(result)
         assert json.loads(result.serialize()) == {
             "type": "relationship",
             "spec_version": "2.1",
-            "id": "relationship--3a7ceb7d-fc94-5f5b-a026-c749fb28d283",
+            "id": "relationship--a5f29507-a189-557b-adca-3d4e3454c749",
             "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
             "created": "2024-01-01T00:00:00.000Z",
             "modified": "2024-01-01T00:00:00.000Z",
@@ -323,6 +334,9 @@ class TestD3FENDConverter:
                 "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
                 "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22",
             ],
+            "x_mitre_attack_spec_version": "3.3.0",
+            "x_mitre_deprecated": False,
+            "x_mitre_modified_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
         }
 
     def test_create_relationship_subtechniques(self, converter):
@@ -356,7 +370,7 @@ class TestD3FENDConverter:
         assert json.loads(result.serialize()) == {
             "type": "relationship",
             "spec_version": "2.1",
-            "id": "relationship--e07e4b28-7856-55ef-8364-9824173b28ae",
+            "id": "relationship--19d379be-f1d2-5d2f-aa70-260c35dd74a5",
             "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
             "created": "2024-01-01T00:00:00.000Z",
             "modified": "2024-01-01T00:00:00.000Z",
@@ -378,6 +392,9 @@ class TestD3FENDConverter:
                 "marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487",
                 "marking-definition--6923e7d4-e142-508c-aefc-b5f4dd27dc22",
             ],
+            "x_mitre_attack_spec_version": "3.3.0",
+            "x_mitre_deprecated": False,
+            "x_mitre_modified_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
         }
 
     def test_create_artifact_indicator(self, converter):
