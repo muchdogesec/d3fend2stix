@@ -11,7 +11,7 @@ from .loggings import logger
 
 
 
-@CustomObject(type='x-d3fend-tactic', properties=[
+@CustomObject(type='x-mitre-tactic', properties=[
     ('name', StringProperty(required=True)),
     ('description', StringProperty()),
 ])
@@ -23,7 +23,7 @@ class D3FENDTactic(_STIXBase):
     ('id', IDProperty('x-mitre-matrix', spec_version='2.1')),
     ('name', StringProperty(required=True)),
     ('description', StringProperty()),
-    ('tactic_refs', ListProperty(ReferenceProperty(valid_types=['x-d3fend-tactic']))),
+    ('tactic_refs', ListProperty(ReferenceProperty(valid_types=['x-mitre-tactic']))),
 ])
 class Matrix(_STIXBase):
     pass

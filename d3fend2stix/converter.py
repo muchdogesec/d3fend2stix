@@ -182,7 +182,7 @@ class D3FENDConverter:
     def create_tactic(self, tactic_obj: Dict[str, Any]) -> Any:
         """Create a D3FEND Tactic STIX object"""
         tactic_id_raw = tactic_obj["@id"]
-        tactic_id = f"x-d3fend-tactic--{generate_uuid5(tactic_id_raw)}"
+        tactic_id = f"x-mitre-tactic--{generate_uuid5(tactic_id_raw)}"
 
         tactic = D3FENDTactic(
             id=tactic_id,
