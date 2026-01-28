@@ -28,7 +28,7 @@ pip3 install -r requirements.txt
 ## Running the script
 
 ```shell
-python3 d3fend2stix.py
+python3 run_d3fend2stix.py
 ```
 
 ## Mappings
