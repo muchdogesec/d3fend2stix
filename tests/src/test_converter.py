@@ -125,6 +125,85 @@ class TestD3FENDConverter:
             {"kill_chain_name": "d3fend", "phase_name": "prevent"},
         ]
 
+    def test_create_technique_is_parent_technique(self, converter_with_tactics):
+        """Test that parent technique has x_mitre_is_subtechnique=False"""
+        # Parent technique - has d3f:DefensiveTechnique in rdfs:subClassOf
+        technique_obj = {
+            "@id": "d3f:ParentTechnique",
+            "rdfs:label": "Parent Technique",
+            "d3f:definition": "A parent technique",
+            "rdfs:subClassOf": [{"@id": "d3f:DefensiveTechnique"}],
+        }
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "x_mitre_is_subtechnique")
+        assert result.x_mitre_is_subtechnique is False
+
+    def test_create_technique_is_subtechnique(self, converter_with_tactics):
+        """Test that sub-technique has x_mitre_is_subtechnique=True"""
+        # Sub-technique - does NOT have d3f:DefensiveTechnique in rdfs:subClassOf
+        technique_obj = {
+            "@id": "d3f:SubTechnique",
+            "rdfs:label": "Sub Technique",
+            "d3f:definition": "A sub-technique",
+            "rdfs:subClassOf": [{"@id": "d3f:SomeParentTechnique"}],
+        }
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "x_mitre_is_subtechnique")
+        assert result.x_mitre_is_subtechnique is True
+
+    def test_create_technique_multiple_subclasses_with_defensive(self, converter_with_tactics):
+        """Test technique with multiple subclasses including DefensiveTechnique"""
+        technique_obj = {
+            "@id": "d3f:MultiSubTechnique",
+            "rdfs:label": "Multi Sub Technique",
+            "d3f:definition": "A technique with multiple subclasses",
+            "rdfs:subClassOf": [
+                {"@id": "d3f:SomeOtherClass"},
+                {"@id": "d3f:DefensiveTechnique"},
+                {"@id": "d3f:AnotherClass"}
+            ],
+        }
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "x_mitre_is_subtechnique")
+        assert result.x_mitre_is_subtechnique is False
+
+    def test_create_technique_multiple_subclasses_without_defensive(self, converter_with_tactics):
+        """Test technique with multiple subclasses not including DefensiveTechnique"""
+        technique_obj = {
+            "@id": "d3f:MultiSubTechnique2",
+            "rdfs:label": "Multi Sub Technique 2",
+            "d3f:definition": "Another technique with multiple subclasses",
+            "rdfs:subClassOf": [
+                {"@id": "d3f:ParentTechnique1"},
+                {"@id": "d3f:ParentTechnique2"}
+            ],
+        }
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "x_mitre_is_subtechnique")
+        assert result.x_mitre_is_subtechnique is True
+
+    def test_create_technique_no_subclassof(self, converter_with_tactics):
+        """Test technique without rdfs:subClassOf property"""
+        technique_obj = {
+            "@id": "d3f:StandaloneTechnique",
+            "rdfs:label": "Standalone Technique",
+            "d3f:definition": "A technique without subClassOf",
+        }
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "x_mitre_is_subtechnique")
+        # Should be True since d3f:DefensiveTechnique is NOT in the list (empty list)
+        assert result.x_mitre_is_subtechnique is True
+
 
     def test_create_tactic(self, converter):
         """Test creating a tactic"""

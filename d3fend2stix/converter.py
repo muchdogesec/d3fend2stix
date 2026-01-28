@@ -128,10 +128,12 @@ class D3FENDConverter:
             created_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             name=self._get_name(technique_obj),
             description=self._get_definition(technique_obj),
+            x_mitre_is_subtechnique={"@id":"d3f:DefensiveTechnique"} not in ensure_list(technique_obj.get("rdfs:subClassOf")),
             kill_chain_phases=kill_chain_phases,
             external_references=external_refs,
             object_marking_refs=config.marking_refs,
             **({"aliases": aliases} if aliases else {}),
+            allow_custom=True,
         )
 
         return attack_pattern
