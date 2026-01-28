@@ -1,5 +1,6 @@
 """Main conversion logic for d3fend2stix"""
 
+import re
 from typing import List, Dict, Any, Tuple
 
 from d3fend2stix.stix_definitions import D3FENDTactic, Matrix
@@ -10,7 +11,7 @@ from .parser import D3FENDParser
 #     create_artifact_indicator, create_relationship
 # )
 from .config import DEFAULT_CONFIG as config
-from .helper import ensure_list, extract_id_from_uri, safe_get, generate_uuid5
+from .helper import ensure_list, extract_id_from_uri, generate_stix_id, safe_get
 from .loggings import logger
 from stix2 import AttackPattern, Indicator, Relationship, Bundle, Artifact
 
@@ -88,14 +89,13 @@ class D3FENDConverter:
     def _convert_matrix(self, tactic_ids: List[str]) -> Any:
         """Convert the D3FEND matrix"""
         matrix = self.create_matrix(tactic_ids)
-        self.stix_objects["mitre-d3fend"] = matrix
         self.stix_objects[self.parser.root["@id"]] = matrix
         return matrix
 
     def create_technique(self, technique_obj: Dict[str, Any]) -> AttackPattern:
         """Create an Attack Pattern (Technique) STIX object"""
         technique_id_raw = technique_obj["@id"]
-        technique_id = f"attack-pattern--{generate_uuid5(technique_id_raw)}"
+        technique_id = generate_stix_id("attack-pattern", technique_id_raw)
 
         # Get external ID
         external_id = technique_obj.get("d3f:d3fend-id", technique_id_raw)
@@ -130,7 +130,7 @@ class D3FENDConverter:
         )
 
         return attack_pattern
-    
+
     def _extract_references(self, obj: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract external references from a D3FEND object"""
         references = []
@@ -182,7 +182,7 @@ class D3FENDConverter:
     def create_tactic(self, tactic_obj: Dict[str, Any]) -> Any:
         """Create a D3FEND Tactic STIX object"""
         tactic_id_raw = tactic_obj["@id"]
-        tactic_id = f"x-mitre-tactic--{generate_uuid5(tactic_id_raw)}"
+        tactic_id = generate_stix_id("x-mitre-tactic", tactic_id_raw)
 
         tactic = D3FENDTactic(
             id=tactic_id,
@@ -206,22 +206,32 @@ class D3FENDConverter:
     def create_matrix(self, tactic_ids: List[str]) -> Any:
         """Create a D3FEND Matrix STIX object"""
         """Create the D3FEND Matrix object"""
-        matrix_id = f"x-mitre-matrix--{generate_uuid5('mitre-d3fend')}"
+        matrix_id = generate_stix_id("x-mitre-matrix", "mitre-d3fend")
 
         matrix = Matrix(
             id=matrix_id,
             created=self.parser.release_date,
             modified=self.parser.release_date,
             created_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
-            name="D3fend",
-            description="A knowledge graph of cybersecurity countermeasures",
+            name=self.parser.root['dcterms:title'],
+            description=self.parser.root['dcterms:description'],
             tactic_refs=tactic_ids,
             external_references=[
                 {
                     "source_name": "mitre-d3fend",
                     "url": "https://d3fend.mitre.org/",
                     "external_id": "mitre-d3fend",
+                },
+                {
+                    "source_name": "license",
+                    "external_id": self.parser.root["dcterms:license"],
+                },
+                {
+                    "source_name": "version",
+                    "url": self.parser.root["owl:versionIRI"]["@id"],
+                    "external_id": self.parser.root["owl:versionInfo"],
                 }
+
             ],
             object_marking_refs=config.marking_refs,
             allow_custom=True,
@@ -269,29 +279,56 @@ class D3FENDConverter:
                         self.stix_objects[stix_rel.id] = stix_rel
                         relationships.append(stix_rel)
         return relationships
-    
+
     def create_relationship(self, source, target, rel_type) -> Any:
         """Create a STIX Relationship object"""
-        uuid_part = generate_uuid5(f"{source['@id']}+{rel_type}+{target['@id']}")
-        relationship_id = f"relationship--{uuid_part}"
         source_stix = self.stix_objects[source['@id']]
         target_stix = self.stix_objects[target['@id']]
-        
+        relationship_type = self.parser.relationship_types.get(rel_type, rel_type)
+        if target_stix['type'] == 'attack-pattern' and source_stix['type'] == 'attack-pattern':
+            # Avoid technique-to-technique relationships
+            assert rel_type == 'rdfs:subClassOf'
+            relationship_type = 'subtechnique-of'
+        relationship_id = generate_stix_id("relationship", f"{source_stix['id']}+{target_stix['id']}+{rel_type}")
+
         relationship = Relationship(
             id=relationship_id,
             created=self.parser.release_date,
             modified=self.parser.release_date,
             created_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
+            description=self._get_relationship_description(rel_type, source, target),
             source_ref=source_stix['id'],
             target_ref=target_stix['id'],
-            relationship_type=self.parser.relationship_types[rel_type],
+            relationship_type=relationship_type,
             object_marking_refs=config.marking_refs,
             external_references=[source_stix['external_references'][0], target_stix['external_references'][0]],
             allow_custom=True,
         )
-        
+
         return relationship
-    
+
+    def _get_relationship_description(self, rel_type, source_obj, target_obj) -> str:
+        """Generate a description for a relationship based on its type"""
+        # Get source and target names
+        source_name = self._get_name(source_obj)
+        target_name = self._get_name(target_obj)
+
+        if rel_type == "rdfs:subClassOf":
+            return f"{source_name} is a sub-class of {target_name}"
+        if rel_type == "subtechnique-of":
+            return f"{source_name} is a sub-technique of {target_name}"
+        if rel_type in self.parser.objects_by_id:
+            rel_decl = self.parser[rel_type]
+            definition = rel_decl.get("d3f:definition", "")
+
+            # Replace 'x' with source name and 'y' with target name
+            # Use word boundaries to avoid replacing x/y in the middle of words
+            definition = re.sub(r'\bx\b', source_name, definition)
+            definition = re.sub(r'\by\b', target_name, definition)
+
+            return definition
+        raise ValueError(f"cannot generate description for relationship type: {rel_type}")
+
     def _convert_artifact_indicators(self) -> List[Any]:
         """Convert D3FEND artifacts to STIX Indicators"""
         indicators = []
@@ -304,15 +341,15 @@ class D3FENDConverter:
             indicators.append(stix_indicator)
             self.created_artifacts.add(artifact_obj["@id"])
         return indicators
-    
+
     def create_artifact_indicator(self, artifact_obj: Dict[str, Any]) -> Indicator:
         """Create an Indicator for a D3FEND artifact"""
         artifact_id_raw = artifact_obj["@id"]
-        indicator_id = f"indicator--{generate_uuid5(artifact_id_raw)}"
-        
+        indicator_id = generate_stix_id("indicator", artifact_id_raw)
+
         # Use the artifact ID as the pattern (hack for d3fend pattern type)
         pattern = artifact_id_raw
-        
+
         indicator = Indicator(
             id=indicator_id,
             created=self.parser.release_date,
@@ -334,5 +371,5 @@ class D3FENDConverter:
             ],
             object_marking_refs=config.marking_refs
         )
-        
+
         return indicator

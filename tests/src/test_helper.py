@@ -4,7 +4,7 @@ import hashlib
 import uuid
 from unittest.mock import patch, MagicMock
 from d3fend2stix.helper import (
-    generate_uuid5,
+    generate_stix_id,
     generate_md5_from_list,
     clean_filesystem,
     extract_id_from_uri,
@@ -14,34 +14,52 @@ from d3fend2stix.helper import (
 from d3fend2stix.config import DEFAULT_CONFIG as config
 
 
-class TestGenerateUuid5:
-    """Tests for generate_uuid5 function"""
+class TestGenerateStixId:
+    """Tests for generate_stix_id function"""
     
-    def test_generate_uuid5_consistent(self):
-        """Test that same input generates same UUID"""
+    def test_generate_stix_id_consistent(self):
+        """Test that same input generates same STIX ID"""
+        object_type = "attack-pattern"
         value = "test_value"
-        uuid1 = generate_uuid5(value)
-        uuid2 = generate_uuid5(value)
-        assert uuid1 == uuid2
+        stix_id1 = generate_stix_id(object_type, value)
+        stix_id2 = generate_stix_id(object_type, value)
+        assert stix_id1 == stix_id2
     
-    def test_generate_uuid5_different_inputs(self):
-        """Test that different inputs generate different UUIDs"""
-        uuid1 = generate_uuid5("value1")
-        uuid2 = generate_uuid5("value2")
-        assert uuid1 != uuid2
+    def test_generate_stix_id_different_inputs(self):
+        """Test that different inputs generate different STIX IDs"""
+        stix_id1 = generate_stix_id("attack-pattern", "value1")
+        stix_id2 = generate_stix_id("attack-pattern", "value2")
+        assert stix_id1 != stix_id2
     
-    def test_generate_uuid5_format(self):
-        """Test that output is valid UUID format"""
-        result = generate_uuid5("test")
-        # Should be valid UUID string
-        uuid.UUID(result)  # Will raise if invalid
+    def test_generate_stix_id_format(self):
+        """Test that output follows STIX ID format"""
+        result = generate_stix_id("attack-pattern", "test")
+        # Should be in format: object-type--uuid
+        assert result.startswith("attack-pattern--")
+        uuid_part = result.split("--", 1)[1]
+        uuid.UUID(uuid_part)  # Will raise if invalid UUID
     
-    def test_generate_uuid5_uses_namespace(self):
-        """Test that UUID is generated with correct namespace"""
+    def test_generate_stix_id_uses_namespace(self):
+        """Test that STIX ID is generated with correct namespace"""
+        object_type = "indicator"
         value = "test_value"
-        expected = str(uuid.uuid5(config.namespace, value))
-        result = generate_uuid5(value)
+        expected_uuid = str(uuid.uuid5(config.namespace, value))
+        expected = f"{object_type}--{expected_uuid}"
+        result = generate_stix_id(object_type, value)
         assert result == expected
+    
+    def test_generate_stix_id_different_object_types(self):
+        """Test that same value with different object types produces different IDs"""
+        value = "same_value"
+        attack_pattern_id = generate_stix_id("attack-pattern", value)
+        indicator_id = generate_stix_id("indicator", value)
+        # Both should use same UUID but different prefixes
+        assert attack_pattern_id.startswith("attack-pattern--")
+        assert indicator_id.startswith("indicator--")
+        # Extract UUIDs - they should be the same
+        uuid1 = attack_pattern_id.split("--", 1)[1]
+        uuid2 = indicator_id.split("--", 1)[1]
+        assert uuid1 == uuid2
 
 
 class TestGenerateMd5FromList:

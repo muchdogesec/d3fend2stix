@@ -5,7 +5,7 @@ from stix2 import AttackPattern, Indicator, Relationship, CustomObject
 from stix2.properties import StringProperty, ListProperty, TypeProperty, IDProperty, ReferenceProperty
 from stix2.base import _STIXBase
 from .config import DEFAULT_CONFIG as config
-from .helper import generate_uuid5, extract_id_from_uri
+from .helper import extract_id_from_uri
 from .loggings import logger
 
 

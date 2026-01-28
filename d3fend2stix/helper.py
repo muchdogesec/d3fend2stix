@@ -7,10 +7,10 @@ from .config import DEFAULT_CONFIG as config
 from .loggings import logger
 from stix2.serialization import serialize as stix_serialize
 
-
-def generate_uuid5(value: str) -> str:
-    """Generate a UUIDv5 using the d3fend2stix namespace"""
-    return str(uuid.uuid5(config.namespace, value))
+def generate_stix_id(object_type: str, unique_value: str) -> str:
+    """Generate a STIX ID for a given object type and unique value"""
+    uuid5 = str(uuid.uuid5(config.namespace, unique_value))
+    return f"{object_type}--{uuid5}"
 
 
 def generate_md5_from_list(stix_objects: list) -> str:
