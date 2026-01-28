@@ -255,3 +255,161 @@ class TestD3FENDParser:
         
         with pytest.raises(json.JSONDecodeError):
             parser.load_data()
+    
+    def test_get_inherited_property_direct(self):
+        """Test getting property directly from object"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:test": {
+                "@id": "d3f:Test",
+                "rdfs:label": "Test Label",
+                "d3f:definition": "Test definition"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:test"]
+        result = parser.get_inherited_property(obj, "rdfs:label")
+        
+        assert result == ["Test Label"]
+    
+    def test_get_inherited_property_from_superclass(self):
+        """Test getting property from superclass when not in object"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:child": {
+                "@id": "d3f:Child",
+                "rdfs:subClassOf": [{"@id": "d3f:Parent"}]
+            },
+            "d3f:parent": {
+                "@id": "d3f:Parent",
+                "d3f:definition": "Parent definition"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:child"]
+        result = parser.get_inherited_property(obj, "d3f:definition")
+        
+        assert result == ["Parent definition"]
+    
+    def test_get_inherited_property_from_grandparent(self):
+        """Test getting property from multiple levels up"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:child": {
+                "@id": "d3f:Child",
+                "rdfs:subClassOf": [{"@id": "d3f:Parent"}]
+            },
+            "d3f:parent": {
+                "@id": "d3f:Parent",
+                "rdfs:subClassOf": [{"@id": "d3f:Grandparent"}]
+            },
+            "d3f:grandparent": {
+                "@id": "d3f:Grandparent",
+                "d3f:kb-article": "Grandparent article"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:child"]
+        result = parser.get_inherited_property(obj, "d3f:kb-article")
+        
+        assert result == ["Grandparent article"]
+    
+    def test_get_inherited_property_not_found(self):
+        """Test getting property that doesn't exist anywhere"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:test": {
+                "@id": "d3f:Test",
+                "rdfs:label": "Test"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:test"]
+        result = parser.get_inherited_property(obj, "nonexistent:property")
+        
+        assert result is None
+    
+    def test_get_inherited_property_multiple_superclasses(self):
+        """Test getting property when object has multiple superclasses"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:child": {
+                "@id": "d3f:Child",
+                "rdfs:subClassOf": [
+                    {"@id": "d3f:Parent1"},
+                    {"@id": "d3f:Parent2"}
+                ]
+            },
+            "d3f:parent1": {
+                "@id": "d3f:Parent1"
+            },
+            "d3f:parent2": {
+                "@id": "d3f:Parent2",
+                "d3f:definition": "From Parent2"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:child"]
+        result = parser.get_inherited_property(obj, "d3f:definition")
+        
+        # Should find it in Parent2
+        assert result == ["From Parent2"]
+    
+    def test_get_inherited_property_override(self):
+        """Test that child property overrides parent property"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:child": {
+                "@id": "d3f:Child",
+                "rdfs:subClassOf": [{"@id": "d3f:Parent"}],
+                "rdfs:label": "Child Label"
+            },
+            "d3f:parent": {
+                "@id": "d3f:Parent",
+                "rdfs:label": "Parent Label"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:child"]
+        result = parser.get_inherited_property(obj, "rdfs:label")
+        
+        # Should return child's value, not parent's
+        assert result == ["Child Label"]
+    
+    def test_get_inherited_property_list_values(self):
+        """Test that list values are properly returned"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:child": {
+                "@id": "d3f:Child",
+                "rdfs:subClassOf": [{"@id": "d3f:Parent"}]
+            },
+            "d3f:parent": {
+                "@id": "d3f:Parent",
+                "rdfs:seeAlso": [
+                    {"@id": "http://example.com/1"},
+                    {"@id": "http://example.com/2"}
+                ]
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:child"]
+        result = parser.get_inherited_property(obj, "rdfs:seeAlso")
+        
+        assert len(result) == 2
+        assert {"@id": "http://example.com/1"} in result
+        assert {"@id": "http://example.com/2"} in result
+    
+    def test_get_inherited_property_no_superclass(self):
+        """Test getting property from object with no superclass"""
+        parser = D3FENDParser("dummy.json")
+        parser.objects_by_id = {
+            "d3f:test": {
+                "@id": "d3f:Test"
+            }
+        }
+        
+        obj = parser.objects_by_id["d3f:test"]
+        result = parser.get_inherited_property(obj, "rdfs:label")
+        
+        assert result is None

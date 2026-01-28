@@ -51,7 +51,7 @@ class TestD3FENDConverter:
         assert converter.id_mapping == {}
         assert converter.created_artifacts == set()
 
-    def test_create_technique_basic(self, converter):
+    def test_create_technique_basic(self, converter_with_tactics):
         """Test creating a basic technique"""
         technique_obj = {
             "@id": "d3f:TestTechnique",
@@ -60,14 +60,14 @@ class TestD3FENDConverter:
             "d3f:d3fend-id": "D3-TT",
         }
 
-        result = converter.create_technique(technique_obj)
+        result = converter_with_tactics.create_technique(technique_obj)
 
         assert isinstance(result, AttackPattern)
         assert result.name == "Test Technique"
         assert result.description == "A test technique"
         assert "D3-TT" in str(result.external_references)
 
-    def test_create_technique_with_synonyms(self, converter):
+    def test_create_technique_with_synonyms(self, converter_with_tactics):
         """Test creating technique with synonyms/aliases"""
         technique_obj = {
             "@id": "d3f:TestTechnique",
@@ -76,13 +76,13 @@ class TestD3FENDConverter:
             "d3f:synonym": ["Synonym1", "Synonym2"],
         }
 
-        result = converter.create_technique(technique_obj)
+        result = converter_with_tactics.create_technique(technique_obj)
 
         assert hasattr(result, "aliases")
         assert "Synonym1" in result.aliases
         assert "Synonym2" in result.aliases
 
-    def test_create_technique_single_synonym(self, converter):
+    def test_create_technique_single_synonym(self, converter_with_tactics):
         """Test creating technique with single synonym"""
         technique_obj = {
             "@id": "d3f:TestTechnique",
@@ -91,10 +91,40 @@ class TestD3FENDConverter:
             "d3f:synonym": "SingleSynonym",
         }
 
-        result = converter.create_technique(technique_obj)
+        result = converter_with_tactics.create_technique(technique_obj)
 
         assert hasattr(result, "aliases")
         assert "SingleSynonym" in result.aliases
+
+    def test_create_technique_with_kill_chain_phases(self, converter_with_tactics):
+        """Test creating technique with kill chain phases"""
+        technique_obj = {
+            "@id": "d3f:TestTechnique",
+            "rdfs:label": "Test Technique",
+            "d3f:definition": "A test technique",
+            "d3f:enables": [{"@id": "D3-Tactic-1"}],
+        }
+        converter_with_tactics.parser.get_inherited_property.return_value = [
+            {"@id": "D3-Tactic-1"}
+        ]
+
+        result = converter_with_tactics.create_technique(technique_obj)
+
+        assert hasattr(result, "kill_chain_phases")
+        assert [dict(k) for k in result.kill_chain_phases] == [
+            {"kill_chain_name": "d3fend", "phase_name": "detect"}
+        ]
+
+
+        converter_with_tactics.parser.get_inherited_property.return_value = [
+            {"@id": "D3-Tactic-1"}, {"@id": "D3-Tactic-2"}
+        ]
+        result = converter_with_tactics.create_technique(technique_obj)
+        assert [dict(k) for k in result.kill_chain_phases] == [
+            {"kill_chain_name": "d3fend", "phase_name": "detect"},
+            {"kill_chain_name": "d3fend", "phase_name": "prevent"},
+        ]
+
 
     def test_create_tactic(self, converter):
         """Test creating a tactic"""
@@ -371,7 +401,25 @@ class TestD3FENDConverter:
 
         assert any(ref.get("external_id") == "other:Reference" for ref in result)
 
-    def test_convert_techniques(self, converter, mock_parser):
+    @pytest.fixture
+    def converter_with_tactics(self, converter):
+        """Fixture to set up converter with mock tactics"""
+        tactic1 = {
+            "x_mitre_shortname": "detect",
+            "external_references": [
+                {"source_name": "mitre-d3fend", "external_id": "D3-Tactic-1"}
+            ],
+        }
+        tactic2 = {
+            "x_mitre_shortname": "prevent",
+            "external_references": [
+                {"source_name": "mitre-d3fend", "external_id": "D3-Tactic-2"}
+            ],
+        }
+        converter.tactics = [tactic1, tactic2]
+        return converter
+
+    def test_convert_techniques(self, converter_with_tactics, mock_parser):
         """Test converting techniques"""
         technique = {
             "@id": "d3f:Technique1",
@@ -384,7 +432,7 @@ class TestD3FENDConverter:
         mock_parser.graph = [technique]
         mock_parser.is_indirect_relation_of = MagicMock(return_value=True)
 
-        result = converter._convert_techniques()
+        result = converter_with_tactics._convert_techniques()
 
         assert len(result) > 0
         assert isinstance(result[0], AttackPattern)
@@ -408,7 +456,7 @@ class TestD3FENDConverter:
     def test_convert_matrix(self, converter, mock_parser):
         """Test converting matrix"""
         tactic_ids = ["x-mitre-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697"]
-        
+
         result = converter._convert_matrix(tactic_ids)
         assert result.name == "D3FEND Test Ontology"
         assert result.tactic_refs == tactic_ids

@@ -14,6 +14,7 @@ from .loggings import logger
 @CustomObject(type='x-mitre-tactic', properties=[
     ('name', StringProperty(required=True)),
     ('description', StringProperty()),
+    ('x_mitre_shortname', StringProperty(required=True)),
 ])
 class D3FENDTactic(_STIXBase):
     pass

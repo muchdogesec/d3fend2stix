@@ -56,6 +56,10 @@ class D3FENDParser:
     def __getitem__(self, key):
         key = key.lower()
         return self.objects_by_id[key]
+    
+    def get(self, key, default=None):
+        key = key.lower()
+        return self.objects_by_id.get(key, default)
 
     def _extract_release_date(self):
         """Extract release date from D3FEND data"""
@@ -107,3 +111,19 @@ class D3FENDParser:
                     to_visit.append(subclass_obj)
         
         return False
+    
+    def get_inherited_property(self, obj: Dict[str, Any], property_name: str) -> Any:
+        """Get a property value, checking superclasses if not found"""
+        if property_name in obj:
+            return ensure_list(obj[property_name])
+        
+        # Check superclasses
+        superclasses = ensure_list(obj.get("rdfs:subClassOf", []))
+        for superclass_ref in superclasses:
+            superclass_id = superclass_ref["@id"]
+            superclass_obj = self.get(superclass_id.lower())
+            if superclass_obj:
+                value = self.get_inherited_property(superclass_obj, property_name)
+                if value is not None:
+                    return value
+        return None

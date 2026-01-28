@@ -36,13 +36,15 @@ class D3FENDConverter:
         # Add default objects (identity and marking definition)
         objects.extend(config.default_objects)
         logger.info(f"Added {len(config.default_objects)} default objects")
-        # Step 1: Create techniques (all levels)
+        # Step 1: Create tactics
+        tactics = self._convert_tactics()
+        logger.info(f"Created {len(tactics)} tactic objects")
+        self.tactics = tactics
+
+        # Step 2: Create techniques (all levels)
         techniques = self._convert_techniques()
         logger.info(f"Created {len(techniques)} technique objects")
 
-        # Step 2: Create tactics
-        tactics = self._convert_tactics()
-        logger.info(f"Created {len(tactics)} tactic objects")
 
         # Step 3: Create matrix with tactic references
         matrix = self._convert_matrix([t.id for t in tactics])
@@ -117,6 +119,8 @@ class D3FENDConverter:
             synonyms = synonym if isinstance(synonym, list) else [synonym]
             aliases.extend(synonyms)
 
+        kill_chain_phases = self._parse_kill_chain_phases(technique_obj)
+
         attack_pattern = AttackPattern(
             id=technique_id,
             created=self.parser.release_date,
@@ -124,12 +128,27 @@ class D3FENDConverter:
             created_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             name=self._get_name(technique_obj),
             description=self._get_definition(technique_obj),
+            kill_chain_phases=kill_chain_phases,
             external_references=external_refs,
             object_marking_refs=config.marking_refs,
             **({"aliases": aliases} if aliases else {}),
         )
 
         return attack_pattern
+    
+    def _parse_kill_chain_phases(self, technique: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Parse kill chain phases from a technique object"""
+        kill_chain_phases = []
+        all_properties = [d['@id'] for d in self.parser.get_inherited_property(technique, "d3f:enables")]
+
+        for tactic in self.tactics:
+            tactic_id_raw = tactic['external_references'][0]['external_id']
+            if tactic_id_raw in all_properties:
+                kill_chain_phases.append({
+                    "kill_chain_name": "d3fend",
+                    "phase_name": tactic['x_mitre_shortname']
+                })
+        return kill_chain_phases
 
     def _extract_references(self, obj: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract external references from a D3FEND object"""
@@ -183,6 +202,7 @@ class D3FENDConverter:
         """Create a D3FEND Tactic STIX object"""
         tactic_id_raw = tactic_obj["@id"]
         tactic_id = generate_stix_id("x-mitre-tactic", tactic_id_raw)
+        mitre_short_name = tactic_id_raw.split(":")[-1].lower()
 
         tactic = D3FENDTactic(
             id=tactic_id,
@@ -190,6 +210,7 @@ class D3FENDConverter:
             modified=self.parser.release_date,
             created_by_ref=config.D3FEND2STIX_IDENTITY_OBJECT["id"],
             name=self._get_name(tactic_obj),
+            x_mitre_shortname=mitre_short_name,
             description=self._get_definition(tactic_obj),
             external_references=[
                 {
