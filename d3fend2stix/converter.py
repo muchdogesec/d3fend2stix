@@ -312,7 +312,7 @@ class D3FENDConverter:
             # Avoid technique-to-technique relationships
             assert rel_type == 'rdfs:subClassOf'
             relationship_type = 'subtechnique-of'
-        relationship_id = generate_stix_id("relationship", f"{source_stix['id']}+{target_stix['id']}+{rel_type}")
+        relationship_id = generate_stix_id("relationship", f"{source_stix['id']}+{target_stix['id']}+{relationship_type}")
 
         relationship = Relationship(
             id=relationship_id,
