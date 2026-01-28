@@ -243,7 +243,7 @@ class D3FENDConverter:
         # Combine definition and kb-article for description
         description = definition
         if kb_article:
-            description = f"{definition}\n{kb_article}"
+            description = f"{definition}\n\n{kb_article}"
         return description
 
     def _convert_relationships(self) -> List[Any]:
