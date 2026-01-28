@@ -132,6 +132,7 @@ class D3FENDConverter:
             kill_chain_phases=kill_chain_phases,
             external_references=external_refs,
             object_marking_refs=config.marking_refs,
+            x_mitre_domains=["d3fend"],
             **({"aliases": aliases} if aliases else {}),
             allow_custom=True,
         )
@@ -222,6 +223,8 @@ class D3FENDConverter:
                 }
             ],
             object_marking_refs=config.marking_refs,
+            x_mitre_domains=["d3fend"],
+            allow_custom=True,
         )
 
         return tactic
@@ -257,6 +260,7 @@ class D3FENDConverter:
 
             ],
             object_marking_refs=config.marking_refs,
+            x_mitre_domains=["d3fend"],
             allow_custom=True,
         )
 
@@ -392,7 +396,9 @@ class D3FENDConverter:
                 },
                 *self._extract_references(artifact_obj)
             ],
-            object_marking_refs=config.marking_refs
+            object_marking_refs=config.marking_refs,
+            x_mitre_domains=["d3fend"],
+            allow_custom=True,
         )
 
         return indicator
