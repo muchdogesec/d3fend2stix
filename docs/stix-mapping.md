@@ -282,6 +282,8 @@ Relationships are created like so;
   ]
 ```
 
+UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `<source_ref>+<target_ref>+<relationship_type>`
+
 ### Relationship targets to artifacts
 
 In the case of artifacts e.g. for `d3f:File` (not tactics/techniques, e.g. `d3f:Detect`).
