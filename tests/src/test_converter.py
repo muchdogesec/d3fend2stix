@@ -92,13 +92,13 @@ class TestD3FENDConverter:
         
         assert result.name == "Detect"
         assert result.description == "Detection techniques"
-        assert result.type == "x-d3fend-tactic"
+        assert result.type == "x-mitre-tactic"
     
     def test_create_matrix(self, converter):
         """Test creating matrix object"""
         tactic_ids = [
-            "x-d3fend-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697",
-            "x-d3fend-tactic--0ef0232d-97ee-47e5-8d83-f3aba6340fad"
+            "x-mitre-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "x-mitre-tactic--0ef0232d-97ee-47e5-8d83-f3aba6340fad"
         ]
         
         result = converter.create_matrix(tactic_ids)
@@ -276,7 +276,7 @@ class TestD3FENDConverter:
     
     def test_convert_matrix(self, converter, mock_parser):
         """Test converting matrix"""
-        tactic_ids = ["x-d3fend-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697"]
+        tactic_ids = ["x-mitre-tactic--f4eba4fb-578d-4a04-9c32-b00141c0e697"]
         
         result = converter._convert_matrix(tactic_ids)
         
