@@ -78,9 +78,9 @@ class TestD3FENDConverter:
 
         result = converter_with_tactics.create_technique(technique_obj)
 
-        assert hasattr(result, "aliases")
-        assert "Synonym1" in result.aliases
-        assert "Synonym2" in result.aliases
+        assert hasattr(result, "x_aliases")
+        assert "Synonym1" in result.x_aliases
+        assert "Synonym2" in result.x_aliases
 
     def test_create_technique_single_synonym(self, converter_with_tactics):
         """Test creating technique with single synonym"""
@@ -110,9 +110,9 @@ class TestD3FENDConverter:
 
         result = converter_with_tactics.create_technique(technique_obj)
 
-        assert hasattr(result, "kill_chain_phases")
+        assert hasattr(result, "x_kill_chain_phases")
         assert [dict(k) for k in result.kill_chain_phases] == [
-            {"kill_chain_name": "d3fend", "phase_name": "detect"}
+            {"x_kill_chain_name": "d3fend", "phase_name": "detect"}
         ]
 
         converter_with_tactics.parser.get_inherited_property.return_value = [
@@ -120,9 +120,9 @@ class TestD3FENDConverter:
             {"@id": "D3-Tactic-2"},
         ]
         result = converter_with_tactics.create_technique(technique_obj)
-        assert [dict(k) for k in result.kill_chain_phases] == [
-            {"kill_chain_name": "d3fend", "phase_name": "detect"},
-            {"kill_chain_name": "d3fend", "phase_name": "prevent"},
+        assert [dict(k) for k in result.x_kill_chain_phases] == [
+            {"x_kill_chain_name": "d3fend", "phase_name": "detect"},
+            {"x_kill_chain_name": "d3fend", "phase_name": "prevent"},
         ]
 
     def test_create_technique_is_parent_technique(self, converter_with_tactics):
