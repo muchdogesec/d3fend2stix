@@ -121,7 +121,7 @@ class D3FENDConverter:
 
         kill_chain_phases = self._parse_kill_chain_phases(technique_obj)
 
-        attack_pattern = CourseOfAction(
+        course_of_action = CourseOfAction(
             id=technique_id,
             created=self.parser.release_date,
             modified=self.parser.release_date,
@@ -129,10 +129,10 @@ class D3FENDConverter:
             name=self._get_name(technique_obj),
             description=self._get_definition(technique_obj),
             x_mitre_is_subtechnique={"@id":"d3f:DefensiveTechnique"} not in ensure_list(technique_obj.get("rdfs:subClassOf")),
-            kill_chain_phases=kill_chain_phases,
+            x_kill_chain_phases=kill_chain_phases,
             external_references=external_refs,
             object_marking_refs=config.marking_refs,
-            **({"aliases": aliases} if aliases else {}),
+            **({"x_aliases": aliases} if aliases else {}),
             x_mitre_domains=["d3fend"],
             x_mitre_deprecated=False,
             x_mitre_version="0.1",
@@ -142,7 +142,7 @@ class D3FENDConverter:
             allow_custom=True,
         )
 
-        return attack_pattern
+        return course_of_action
     
     def _parse_kill_chain_phases(self, technique: Dict[str, Any]) -> List[Dict[str, str]]:
         """Parse kill chain phases from a technique object"""

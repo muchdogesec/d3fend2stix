@@ -51,13 +51,13 @@ class TestGenerateStixId:
     def test_generate_stix_id_different_object_types(self):
         """Test that same value with different object types produces different IDs"""
         value = "same_value"
-        attack_pattern_id = generate_stix_id("course-of-action", value)
+        course_of_action_id = generate_stix_id("course-of-action", value)
         indicator_id = generate_stix_id("indicator", value)
         # Both should use same UUID but different prefixes
-        assert attack_pattern_id.startswith("course-of-action--")
+        assert course_of_action_id.startswith("course-of-action--")
         assert indicator_id.startswith("indicator--")
         # Extract UUIDs - they should be the same
-        uuid1 = attack_pattern_id.split("--", 1)[1]
+        uuid1 = course_of_action_id.split("--", 1)[1]
         uuid2 = indicator_id.split("--", 1)[1]
         assert uuid1 == uuid2
 
