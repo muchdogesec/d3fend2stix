@@ -6,7 +6,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 from d3fend2stix.converter import D3FENDConverter
 from d3fend2stix.parser import D3FENDParser
-from stix2 import AttackPattern, Indicator, Relationship
+from stix2 import CourseOfAction, Indicator, Relationship
 
 
 class TestD3FENDConverter:
@@ -62,7 +62,7 @@ class TestD3FENDConverter:
 
         result = converter_with_tactics.create_technique(technique_obj)
 
-        assert isinstance(result, AttackPattern)
+        assert isinstance(result, CourseOfAction)
         assert result.name == "Test Technique"
         assert result.description == "A test technique"
         assert "D3-TT" in str(result.external_references)
@@ -276,24 +276,24 @@ class TestD3FENDConverter:
 
         # Add mock STIX objects
         converter.stix_objects["d3f:Source"] = {
-            "id": "attack-pattern--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
                     "url": "https://d3fend.mitre.org/technique/d3f:Source",
                 }
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
         converter.stix_objects["d3f:Target"] = {
-            "id": "attack-pattern--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "id": "course-of-action--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
                     "url": "https://d3fend.mitre.org/technique/d3f:Target",
                 }
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
         converter.stix_objects["d3f:SecondTarget"] = {
             "id": "indicator--12345678-1234-5678-1234-567812345678",
@@ -318,8 +318,8 @@ class TestD3FENDConverter:
             "modified": "2024-01-01T00:00:00.000Z",
             "relationship_type": "subtechnique-of",
             "description": "Source is a sub-class of Target",
-            "source_ref": "attack-pattern--f4eba4fb-578d-4a04-9c32-b00141c0e697",
-            "target_ref": "attack-pattern--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "source_ref": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "target_ref": "course-of-action--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
@@ -346,24 +346,24 @@ class TestD3FENDConverter:
 
         # Add mock STIX objects
         converter.stix_objects["d3f:SubTechnique"] = {
-            "id": "attack-pattern--4baf2433-6993-4272-bac9-f717941bc7dc",
+            "id": "course-of-action--4baf2433-6993-4272-bac9-f717941bc7dc",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
                     "url": "https://d3fend.mitre.org/technique/d3f:SubTechnique",
                 }
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
         converter.stix_objects["d3f:ParentTechnique"] = {
-            "id": "attack-pattern--4847f5c8-2e29-4cfe-9692-9198adf23b4e",
+            "id": "course-of-action--4847f5c8-2e29-4cfe-9692-9198adf23b4e",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
                     "url": "https://d3fend.mitre.org/technique/d3f:ParentTechnique",
                 }
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
 
         result = converter.create_relationship(source, target, "rdfs:subClassOf")
@@ -376,8 +376,8 @@ class TestD3FENDConverter:
             "modified": "2024-01-01T00:00:00.000Z",
             "relationship_type": "subtechnique-of",
             "description": "SubTechnique is a sub-class of ParentTechnique",
-            "source_ref": "attack-pattern--4baf2433-6993-4272-bac9-f717941bc7dc",
-            "target_ref": "attack-pattern--4847f5c8-2e29-4cfe-9692-9198adf23b4e",
+            "source_ref": "course-of-action--4baf2433-6993-4272-bac9-f717941bc7dc",
+            "target_ref": "course-of-action--4847f5c8-2e29-4cfe-9692-9198adf23b4e",
             "external_references": [
                 {
                     "source_name": "mitre-d3fend",
@@ -531,7 +531,7 @@ class TestD3FENDConverter:
         result = converter_with_tactics._convert_techniques()
 
         assert len(result) > 0
-        assert isinstance(result[0], AttackPattern)
+        assert isinstance(result[0], CourseOfAction)
 
     def test_convert_tactics(self, converter, mock_parser):
         """Test converting tactics"""
@@ -588,18 +588,18 @@ class TestD3FENDConverter:
         )
 
         converter.stix_objects["d3f:Source"] = {
-            "id": "attack-pattern--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
             "external_references": [
                 {"source_name": "test", "url": "https://example.com/source"}
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
         converter.stix_objects["d3f:Target"] = {
-            "id": "attack-pattern--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "id": "course-of-action--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
             "external_references": [
                 {"source_name": "test", "url": "https://example.com/target"}
             ],
-            "type": "attack-pattern",
+            "type": "course-of-action",
         }
 
         result = converter._convert_relationships()
@@ -626,11 +626,11 @@ class TestD3FENDConverter:
         )
 
         converter.stix_objects["d3f:Source"] = {
-            "id": "attack-pattern--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
             "external_references": [{"source_name": "test"}],
         }
         converter.stix_objects["d3f:Target"] = {
-            "id": "attack-pattern--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "id": "course-of-action--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
             "external_references": [{"source_name": "test"}],
         }
 

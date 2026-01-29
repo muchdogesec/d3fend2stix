@@ -26,7 +26,7 @@ class TestMain:
         
         mock_converter = MagicMock()
         mock_stix_objects = [
-            {"id": "attack-pattern--123", "type": "attack-pattern"},
+            {"id": "course-of-action--123", "type": "course-of-action"},
             {"id": "indicator--456", "type": "indicator"}
         ]
         mock_converter.convert.return_value = mock_stix_objects
@@ -134,7 +134,7 @@ class TestMain:
         
         mock_converter = MagicMock()
         test_objects = [
-            {"id": "obj-1", "type": "attack-pattern"},
+            {"id": "obj-1", "type": "course-of-action"},
             {"id": "obj-2", "type": "indicator"}
         ]
         mock_converter.convert.return_value = test_objects
@@ -171,7 +171,7 @@ class TestMain:
         mock_parser_class.return_value = mock_parser
         
         mock_converter = MagicMock()
-        test_objects = [{"id": "obj-1", "type": "attack-pattern"}]
+        test_objects = [{"id": "obj-1", "type": "course-of-action"}]
         mock_converter.convert.return_value = test_objects
         mock_converter_class.return_value = mock_converter
         

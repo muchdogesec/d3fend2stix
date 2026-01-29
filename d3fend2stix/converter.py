@@ -13,7 +13,7 @@ from .parser import D3FENDParser
 from .config import DEFAULT_CONFIG as config
 from .helper import ensure_list, extract_id_from_uri, generate_stix_id, safe_get
 from .loggings import logger
-from stix2 import AttackPattern, Indicator, Relationship, Bundle, Artifact
+from stix2 import CourseOfAction, Indicator, Relationship, Bundle, Artifact
 
 
 class D3FENDConverter:
@@ -94,10 +94,10 @@ class D3FENDConverter:
         self.stix_objects[self.parser.root["@id"]] = matrix
         return matrix
 
-    def create_technique(self, technique_obj: Dict[str, Any]) -> AttackPattern:
+    def create_technique(self, technique_obj: Dict[str, Any]) -> CourseOfAction:
         """Create an Attack Pattern (Technique) STIX object"""
         technique_id_raw = technique_obj["@id"]
-        technique_id = generate_stix_id("attack-pattern", technique_id_raw)
+        technique_id = generate_stix_id("course-of-action", technique_id_raw)
 
         # Get external ID
         external_id = technique_obj.get("d3f:d3fend-id", technique_id_raw)
@@ -121,7 +121,7 @@ class D3FENDConverter:
 
         kill_chain_phases = self._parse_kill_chain_phases(technique_obj)
 
-        attack_pattern = AttackPattern(
+        attack_pattern = CourseOfAction(
             id=technique_id,
             created=self.parser.release_date,
             modified=self.parser.release_date,
@@ -325,7 +325,7 @@ class D3FENDConverter:
         source_stix = self.stix_objects[source['@id']]
         target_stix = self.stix_objects[target['@id']]
         relationship_type = self.parser.relationship_types.get(rel_type, rel_type)
-        if target_stix['type'] == 'attack-pattern' and source_stix['type'] == 'attack-pattern':
+        if target_stix['type'] == 'course-of-action' and source_stix['type'] == 'course-of-action':
             # Avoid technique-to-technique relationships
             assert rel_type == 'rdfs:subClassOf'
             relationship_type = 'subtechnique-of'

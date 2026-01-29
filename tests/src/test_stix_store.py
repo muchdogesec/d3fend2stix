@@ -16,8 +16,8 @@ class TestStoreInBundle:
         """Sample STIX objects for testing"""
         return [
             {
-                "type": "attack-pattern",
-                "id": "attack-pattern--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+                "type": "course-of-action",
+                "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
                 "name": "Test Pattern",
                 "spec_version": "2.1",
                 "created": "2024-01-01T00:00:00.000Z",

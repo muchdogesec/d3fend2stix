@@ -122,8 +122,8 @@ Identified where `rdfs:subClassOf.@id` is `d3f:DefensiveTechnique`
 
 ```json
 {
-	"type": "attack-pattern",
-	"id": "attack-pattern--<UUID v5>",
+	"type": "course-of-action",
+	"id": "course-of-action--<UUID v5>",
 	"created": "<d3f:release-date>",
 	"modified": "<d3f:release-date>",
 	"created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",

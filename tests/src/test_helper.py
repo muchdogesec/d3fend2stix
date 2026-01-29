@@ -19,7 +19,7 @@ class TestGenerateStixId:
     
     def test_generate_stix_id_consistent(self):
         """Test that same input generates same STIX ID"""
-        object_type = "attack-pattern"
+        object_type = "course-of-action"
         value = "test_value"
         stix_id1 = generate_stix_id(object_type, value)
         stix_id2 = generate_stix_id(object_type, value)
@@ -27,15 +27,15 @@ class TestGenerateStixId:
     
     def test_generate_stix_id_different_inputs(self):
         """Test that different inputs generate different STIX IDs"""
-        stix_id1 = generate_stix_id("attack-pattern", "value1")
-        stix_id2 = generate_stix_id("attack-pattern", "value2")
+        stix_id1 = generate_stix_id("course-of-action", "value1")
+        stix_id2 = generate_stix_id("course-of-action", "value2")
         assert stix_id1 != stix_id2
     
     def test_generate_stix_id_format(self):
         """Test that output follows STIX ID format"""
-        result = generate_stix_id("attack-pattern", "test")
+        result = generate_stix_id("course-of-action", "test")
         # Should be in format: object-type--uuid
-        assert result.startswith("attack-pattern--")
+        assert result.startswith("course-of-action--")
         uuid_part = result.split("--", 1)[1]
         uuid.UUID(uuid_part)  # Will raise if invalid UUID
     
@@ -51,10 +51,10 @@ class TestGenerateStixId:
     def test_generate_stix_id_different_object_types(self):
         """Test that same value with different object types produces different IDs"""
         value = "same_value"
-        attack_pattern_id = generate_stix_id("attack-pattern", value)
+        attack_pattern_id = generate_stix_id("course-of-action", value)
         indicator_id = generate_stix_id("indicator", value)
         # Both should use same UUID but different prefixes
-        assert attack_pattern_id.startswith("attack-pattern--")
+        assert attack_pattern_id.startswith("course-of-action--")
         assert indicator_id.startswith("indicator--")
         # Extract UUIDs - they should be the same
         uuid1 = attack_pattern_id.split("--", 1)[1]
@@ -74,7 +74,7 @@ class TestGenerateMd5FromList:
     def test_generate_md5_consistent(self):
         """Test that same objects generate same hash"""
         objects = [
-            {"id": "test-1", "type": "attack-pattern"},
+            {"id": "test-1", "type": "course-of-action"},
             {"id": "test-2", "type": "indicator"}
         ]
         hash1 = generate_md5_from_list(objects)
@@ -83,7 +83,7 @@ class TestGenerateMd5FromList:
     
     def test_generate_md5_order_independent(self):
         """Test that object order doesn't affect hash (due to sorting)"""
-        obj1 = {"id": "test-1", "type": "attack-pattern"}
+        obj1 = {"id": "test-1", "type": "course-of-action"}
         obj2 = {"id": "test-2", "type": "indicator"}
         
         hash1 = generate_md5_from_list([obj1, obj2])
@@ -92,7 +92,7 @@ class TestGenerateMd5FromList:
     
     def test_generate_md5_different_content(self):
         """Test that different content generates different hash"""
-        objects1 = [{"id": "test-1", "type": "attack-pattern"}]
+        objects1 = [{"id": "test-1", "type": "course-of-action"}]
         objects2 = [{"id": "test-2", "type": "indicator"}]
         
         hash1 = generate_md5_from_list(objects1)

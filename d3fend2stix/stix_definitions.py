@@ -1,7 +1,7 @@
 """Create STIX objects from D3FEND data"""
 import uuid
 from typing import Dict, List, Any, Optional
-from stix2 import AttackPattern, Indicator, Relationship, CustomObject
+from stix2 import CourseOfAction, Indicator, Relationship, CustomObject
 from stix2.properties import StringProperty, ListProperty, TypeProperty, IDProperty, ReferenceProperty
 from stix2.base import _STIXBase
 from .config import DEFAULT_CONFIG as config
