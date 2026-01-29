@@ -93,8 +93,8 @@ class TestD3FENDConverter:
 
         result = converter_with_tactics.create_technique(technique_obj)
 
-        assert hasattr(result, "aliases")
-        assert "SingleSynonym" in result.aliases
+        assert hasattr(result, "x_aliases")
+        assert "SingleSynonym" in result.x_aliases
 
     def test_create_technique_with_kill_chain_phases(self, converter_with_tactics):
         """Test creating technique with kill chain phases"""
@@ -111,8 +111,8 @@ class TestD3FENDConverter:
         result = converter_with_tactics.create_technique(technique_obj)
 
         assert hasattr(result, "x_kill_chain_phases")
-        assert [dict(k) for k in result.kill_chain_phases] == [
-            {"x_kill_chain_name": "d3fend", "phase_name": "detect"}
+        assert [dict(k) for k in result.x_kill_chain_phases] == [
+            {"kill_chain_name": "d3fend", "phase_name": "detect"}
         ]
 
         converter_with_tactics.parser.get_inherited_property.return_value = [
@@ -121,8 +121,8 @@ class TestD3FENDConverter:
         ]
         result = converter_with_tactics.create_technique(technique_obj)
         assert [dict(k) for k in result.x_kill_chain_phases] == [
-            {"x_kill_chain_name": "d3fend", "phase_name": "detect"},
-            {"x_kill_chain_name": "d3fend", "phase_name": "prevent"},
+            {"kill_chain_name": "d3fend", "phase_name": "detect"},
+            {"kill_chain_name": "d3fend", "phase_name": "prevent"},
         ]
 
     def test_create_technique_is_parent_technique(self, converter_with_tactics):
@@ -308,11 +308,10 @@ class TestD3FENDConverter:
 
         result = converter.create_relationship(source, target, "rdfs:subClassOf")
         assert isinstance(result, Relationship)
-        print(result)
         assert json.loads(result.serialize()) == {
             "type": "relationship",
             "spec_version": "2.1",
-            "id": "relationship--a5f29507-a189-557b-adca-3d4e3454c749",
+            "id": "relationship--af17385a-3e82-5391-841c-491b0d0c4ffc",
             "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
             "created": "2024-01-01T00:00:00.000Z",
             "modified": "2024-01-01T00:00:00.000Z",
@@ -370,7 +369,7 @@ class TestD3FENDConverter:
         assert json.loads(result.serialize()) == {
             "type": "relationship",
             "spec_version": "2.1",
-            "id": "relationship--19d379be-f1d2-5d2f-aa70-260c35dd74a5",
+            "id": "relationship--e0e1cd40-0aec-5ddd-a3d9-13c76563412b",
             "created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
             "created": "2024-01-01T00:00:00.000Z",
             "modified": "2024-01-01T00:00:00.000Z",
