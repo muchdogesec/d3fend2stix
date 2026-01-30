@@ -129,33 +129,35 @@ Identified where `rdfs:subClassOf.@id` is `d3f:DefensiveTechnique`
 	"created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
 	"name": "<rdfs:label>",
 	"description": "<d3f:definition>\n<d3f:kb-article>",
-	"aliases": [
+	"x_aliases": [
 		"<d3f:synonyms>"
 	],
   "x_mitre_domains": [
     "d3fend"
   ],
   "x_mitre_is_subtechnique": "<if subclass of tactic is false, else true>",
-  "kill_chain_phases": [
-      {
-        "kill_chain_name": "d3fend",
-        "phase_name": "<tactic shortname>"
-      }
-   ],
 	"external_references": [
 		{
 	    	"source_name": "mitre-d3fend",
 	    	"url": "https://d3fend.mitre.org/technique/<@id>",
 	    	"external_id": "<d3f:d3fend-id>"
 	  },
+    {
+        "source_name": "mitre-d3fend",
+        "description": "This technique enables the tactic <TACTIC NAME>",
+        "url": "https://d3fend.mitre.org/tactic/d3f:<TACTIC ID>",
+        "external_id": "<TACTIC ID>"
+    },
 		{
-	    	"description": "seeAlso",
-	    	"url": "<@id>"
+	    	"source_name": "<seeAlso>",
+        "description": "<seeAlso>",
+	    	"url": "<seeAlso>"
 	  },
-		{
-	    	"description": "seeAlso",
-	    	"url": "<@id>"
-	  },
+    {
+        "source_name": "<seeAlso>",
+        "description": "<seeAlso>",
+        "url": "<seeAlso>"
+    },
     {
         "source_name": "d3f:kb-reference.rdfs:label",
         "descripiton": "d3f:kb-reference.d3f:kb-abstract",
@@ -294,6 +296,8 @@ UUID namespace `6923e7d4-e142-508c-aefc-b5f4dd27dc22` and value is `<source_ref>
 To support the ATT&CK navigator, we need to include some standard relationships. This only applies to Sub-techniques -> Techniques, and Sub-techniques -> Sub-techniques. If not one of these joins, then the `relationship_type` in all places matches that from the d3fend file. Note, we do not need to include a relationship-type external_reference section for these objects.
 
 However if Sub-techniques -> Techniques, or Sub-techniques -> Sub-techniques we need to us the `relationship_type` = `subtechnique-of`. To ensure we don't lose the original definition, we should track the original relationship type in the description AND in external_references.
+
+We also link Sub-(Sub)-Techniques back to the Tactic using an enables type relationship.
 
 ### Relationship targets to artifacts
 
