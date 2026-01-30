@@ -129,33 +129,35 @@ Identified where `rdfs:subClassOf.@id` is `d3f:DefensiveTechnique`
 	"created_by_ref": "identity--9779a2db-f98c-5f4b-8d08-8ee04e02dbb5",
 	"name": "<rdfs:label>",
 	"description": "<d3f:definition>\n<d3f:kb-article>",
-	"aliases": [
+	"x_aliases": [
 		"<d3f:synonyms>"
 	],
   "x_mitre_domains": [
     "d3fend"
   ],
   "x_mitre_is_subtechnique": "<if subclass of tactic is false, else true>",
-  "kill_chain_phases": [
-      {
-        "kill_chain_name": "d3fend",
-        "phase_name": "<tactic shortname>"
-      }
-   ],
 	"external_references": [
 		{
 	    	"source_name": "mitre-d3fend",
 	    	"url": "https://d3fend.mitre.org/technique/<@id>",
 	    	"external_id": "<d3f:d3fend-id>"
 	  },
+    {
+        "source_name": "mitre-d3fend",
+        "description": "This technique enables the tactic <TACTIC NAME>",
+        "url": "https://d3fend.mitre.org/tactic/d3f:<TACTIC ID>",
+        "external_id": "<TACTIC ID>"
+    },
 		{
-	    	"description": "seeAlso",
-	    	"url": "<@id>"
+	    	"source_name": "<seeAlso>",
+        "description": "<seeAlso>",
+	    	"url": "<seeAlso>"
 	  },
-		{
-	    	"description": "seeAlso",
-	    	"url": "<@id>"
-	  },
+    {
+        "source_name": "<seeAlso>",
+        "description": "<seeAlso>",
+        "url": "<seeAlso>"
+    },
     {
         "source_name": "d3f:kb-reference.rdfs:label",
         "descripiton": "d3f:kb-reference.d3f:kb-abstract",
