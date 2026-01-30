@@ -128,6 +128,6 @@ class D3FENDParser:
             superclass_obj = self.get(superclass_id.lower())
             if superclass_obj:
                 value = self.get_inherited_property(superclass_obj, property_name)
-                if value is not None:
+                if value:
                     return value
-        return None
+        return []

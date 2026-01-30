@@ -1,5 +1,6 @@
 """Main conversion logic for d3fend2stix"""
 
+from collections import defaultdict
 import re
 from typing import List, Dict, Any, Tuple
 
@@ -11,7 +12,7 @@ from .parser import D3FENDParser
 #     create_artifact_indicator, create_relationship
 # )
 from .config import DEFAULT_CONFIG as config
-from .helper import ensure_list, extract_id_from_uri, generate_stix_id, safe_get
+from .helper import ensure_list, extract_id_from_uri, generate_stix_id, safe_get, stix_as_dict
 from .loggings import logger
 from stix2 import CourseOfAction, Indicator, Relationship, Bundle, Artifact
 
@@ -24,6 +25,7 @@ class D3FENDConverter:
         self.stix_objects: dict[str, dict] = {}
         self.id_mapping = {}  # Maps D3FEND IDs to STIX IDs
         self.created_artifacts = set()  # Track created artifact indicators
+        self.tactic_technique_map = defaultdict(list)  # Map tactic IDs to their techniques
 
     def convert(self) -> List[Any]:
         """
@@ -44,6 +46,9 @@ class D3FENDConverter:
         # Step 2: Create techniques (all levels)
         techniques = self._convert_techniques()
         logger.info(f"Created {len(techniques)} technique objects")
+
+        tech_tactic_relationships = self._add_tactic_technique_relationships()
+        logger.info(f"Created {len(tech_tactic_relationships)} technique-tactic relationships")
 
 
         # Step 3: Create matrix with tactic references
@@ -119,7 +124,7 @@ class D3FENDConverter:
             synonyms = synonym if isinstance(synonym, list) else [synonym]
             aliases.extend(synonyms)
 
-        kill_chain_phases = self._parse_kill_chain_phases(technique_obj)
+        tactic_external_refs = self._parse_tech_tactics(technique_obj)
 
         course_of_action = CourseOfAction(
             id=technique_id,
@@ -129,8 +134,7 @@ class D3FENDConverter:
             name=self._get_name(technique_obj),
             description=self._get_definition(technique_obj),
             x_mitre_is_subtechnique={"@id":"d3f:DefensiveTechnique"} not in ensure_list(technique_obj.get("rdfs:subClassOf")),
-            x_kill_chain_phases=kill_chain_phases,
-            external_references=external_refs,
+            external_references=external_refs + tactic_external_refs,
             object_marking_refs=config.marking_refs,
             **({"x_aliases": aliases} if aliases else {}),
             x_mitre_domains=["d3fend"],
@@ -144,19 +148,19 @@ class D3FENDConverter:
 
         return course_of_action
     
-    def _parse_kill_chain_phases(self, technique: Dict[str, Any]) -> List[Dict[str, str]]:
+    def _parse_tech_tactics(self, technique: Dict[str, Any]) -> List[Dict[str, str]]:
         """Parse kill chain phases from a technique object"""
-        kill_chain_phases = []
+        tactic_external_refs = []
         all_properties = [d['@id'] for d in self.parser.get_inherited_property(technique, "d3f:enables")]
 
         for tactic in self.tactics:
             tactic_id_raw = tactic['external_references'][0]['external_id']
             if tactic_id_raw in all_properties:
-                kill_chain_phases.append({
-                    "kill_chain_name": "d3fend",
-                    "phase_name": tactic['x_mitre_shortname']
-                })
-        return kill_chain_phases
+                self.tactic_technique_map[tactic_id_raw].append(technique['@id'])
+                ref = stix_as_dict(tactic['external_references'][0]).copy()
+                ref['description'] = "This technique enables the tactic " + tactic['name']
+                tactic_external_refs.append(ref)
+        return tactic_external_refs
 
     def _extract_references(self, obj: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract external references from a D3FEND object"""
@@ -295,6 +299,23 @@ class D3FENDConverter:
         if kb_article:
             description = f"{definition}\n\n{kb_article}"
         return description
+    
+    def _add_tactic_technique_relationships(self):
+        """Add relationships between tactics and techniques based on enables property"""
+        relationships = []
+        for tactic_id, technique_ids in self.tactic_technique_map.items():
+            for tech_id in technique_ids:
+                if tech_id not in self.stix_objects or tactic_id not in self.stix_objects:
+                    continue
+                relationship = self.create_relationship(
+                    self.parser[tech_id],
+                    self.parser[tactic_id],
+                    "d3f:enables"
+                )
+                if relationship:
+                    self.stix_objects[relationship.id] = relationship
+                    relationships.append(relationship)
+        return relationships
 
     def _convert_relationships(self) -> List[Any]:
         """Convert relationships between D3FEND objects"""
@@ -302,6 +323,9 @@ class D3FENDConverter:
         for graph_obj in self.parser.graph:
             rel_keys = set(graph_obj.keys()) & set(self.parser.relationship_types)
             for rel_key in rel_keys:
+                if rel_key == 'd3f:enables' and self.parser.is_indirect_relation_of("rdfs:subClassOf", graph_obj, "d3f:DefensiveTechnique"):
+                    # Skip enables relationships as they are handled via tactic references
+                    continue
                 targets = ensure_list(graph_obj[rel_key])
                 for target_id in targets:
                     relationship_type = rel_key

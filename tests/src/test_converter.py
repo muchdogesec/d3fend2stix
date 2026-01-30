@@ -8,6 +8,8 @@ from d3fend2stix.converter import D3FENDConverter
 from d3fend2stix.parser import D3FENDParser
 from stix2 import CourseOfAction, Indicator, Relationship
 
+from d3fend2stix.helper import stix_as_dict
+
 
 class TestD3FENDConverter:
     """Tests for D3FENDConverter class"""
@@ -15,7 +17,7 @@ class TestD3FENDConverter:
     @pytest.fixture
     def mock_parser(self):
         """Create a mock parser for testing"""
-        parser = MagicMock(spec=D3FENDParser)
+        parser = D3FENDParser("dummy_path")
         parser.release_date = datetime(2024, 1, 1)
         parser.graph = []
         parser.objects_by_id = {}
@@ -96,34 +98,75 @@ class TestD3FENDConverter:
         assert hasattr(result, "x_aliases")
         assert "SingleSynonym" in result.x_aliases
 
-    def test_create_technique_with_kill_chain_phases(self, converter_with_tactics):
-        """Test creating technique with kill chain phases"""
+    def test_create_technique_with_tactic_refs(self, converter_with_tactics):
+        """Test creating technique with tactic external references"""
         technique_obj = {
             "@id": "d3f:TestTechnique",
             "rdfs:label": "Test Technique",
             "d3f:definition": "A test technique",
             "d3f:enables": [{"@id": "D3-Tactic-1"}],
         }
-        converter_with_tactics.parser.get_inherited_property.return_value = [
-            {"@id": "D3-Tactic-1"}
-        ]
+        converter_with_tactics.parser.get_inherited_property = MagicMock(
+            return_value=[{"@id": "D3-Tactic-1"}]
+        )
 
         result = converter_with_tactics.create_technique(technique_obj)
 
-        assert hasattr(result, "x_kill_chain_phases")
-        assert [dict(k) for k in result.x_kill_chain_phases] == [
-            {"kill_chain_name": "d3fend", "phase_name": "detect"}
-        ]
+        # Check that tactic_technique_map is populated (this is the main functionality)
+        assert "D3-Tactic-1" in converter_with_tactics.tactic_technique_map
+        assert (
+            "d3f:TestTechnique"
+            in converter_with_tactics.tactic_technique_map["D3-Tactic-1"]
+        )
 
-        converter_with_tactics.parser.get_inherited_property.return_value = [
-            {"@id": "D3-Tactic-1"},
-            {"@id": "D3-Tactic-2"},
-        ]
-        result = converter_with_tactics.create_technique(technique_obj)
-        assert [dict(k) for k in result.x_kill_chain_phases] == [
-            {"kill_chain_name": "d3fend", "phase_name": "detect"},
-            {"kill_chain_name": "d3fend", "phase_name": "prevent"},
-        ]
+        # Check that tactic external reference is added to the technique
+        # The external reference should have source_name="mitre-d3fend" and external_id="D3-Tactic-1"
+        # and description about enabling the tactic
+        assert {
+            "source_name": "mitre-d3fend",
+            "description": "This technique enables the tactic Tactic 1",
+            "external_id": "D3-Tactic-1",
+        } in stix_as_dict(result.external_references)
+        assert len(result.external_references) == 2
+
+    def test_create_technique_with_multiple_tactic_refs(self, converter_with_tactics):
+        """Test creating technique with multiple tactic external references"""
+        technique_obj = {
+            "@id": "d3f:TestTechnique2",
+            "rdfs:label": "Test Technique 2",
+            "d3f:definition": "Another test technique",
+            "d3f:enables": [{"@id": "D3-Tactic-1"}, {"@id": "D3-Tactic-2"}],
+        }
+        converter_with_tactics.parser.get_inherited_property = MagicMock(
+            return_value=[
+                {"@id": "D3-Tactic-1"},
+                {"@id": "D3-Tactic-2"},
+            ]
+        )
+
+        result = stix_as_dict(converter_with_tactics.create_technique(technique_obj))
+
+        assert (
+            dict(
+                source_name="mitre-d3fend",
+                description="This technique enables the tactic Tactic 1",
+                external_id="D3-Tactic-1",
+            )
+            in result["external_references"]
+        )
+        assert (
+            dict(
+                source_name="mitre-d3fend",
+                description="This technique enables the tactic Tactic 2",
+                external_id="D3-Tactic-2",
+            )
+            in result["external_references"]
+        )
+
+        assert {
+            "D3-Tactic-1": ["d3f:TestTechnique2"],
+            "D3-Tactic-2": ["d3f:TestTechnique2"],
+        } == converter_with_tactics.tactic_technique_map
 
     def test_create_technique_is_parent_technique(self, converter_with_tactics):
         """Test that parent technique has x_mitre_is_subtechnique=False"""
@@ -458,8 +501,8 @@ class TestD3FENDConverter:
             "d3f:kb-abstract": "KB Abstract",
             "d3f:has-link": {"@value": "http://example.com/kb"},
         }
+        mock_parser.add_object(ref_obj)
 
-        mock_parser.__getitem__ = MagicMock(return_value=ref_obj)
         converter.parser = mock_parser
 
         obj = {"@id": "d3f:Test", "d3f:kb-reference": [{"@id": "d3f:KBRef1"}]}
@@ -500,12 +543,14 @@ class TestD3FENDConverter:
     def converter_with_tactics(self, converter):
         """Fixture to set up converter with mock tactics"""
         tactic1 = {
+            "name": "Tactic 1",
             "x_mitre_shortname": "detect",
             "external_references": [
                 {"source_name": "mitre-d3fend", "external_id": "D3-Tactic-1"}
             ],
         }
         tactic2 = {
+            "name": "Tactic 2",
             "x_mitre_shortname": "prevent",
             "external_references": [
                 {"source_name": "mitre-d3fend", "external_id": "D3-Tactic-2"}
@@ -611,6 +656,107 @@ class TestD3FENDConverter:
         assert len(result) > 0
         assert isinstance(result[0], Indicator)
 
+    def test_add_tactic_technique_relationships(self, converter, mock_parser):
+        """Test adding tactic-technique relationships"""
+        # Setup tactic_technique_map
+        converter.tactic_technique_map = {
+            "d3f:Tactic1": ["d3f:Technique1", "d3f:Technique2"],
+            "d3f:Tactic2": ["d3f:Technique1"],
+        }
+
+        # Setup mock parser objects
+        mock_parser.objects_by_id = {
+            "d3f:technique1": {"@id": "d3f:Technique1", "rdfs:label": "Technique 1"},
+            "d3f:technique2": {"@id": "d3f:Technique2", "rdfs:label": "Technique 2"},
+            "d3f:tactic1": {"@id": "d3f:Tactic1", "rdfs:label": "Tactic 1"},
+            "d3f:tactic2": {"@id": "d3f:Tactic2", "rdfs:label": "Tactic 2"},
+            "d3f:enables": {"@id": "d3f:enables", "d3f:definition": "x enables y"},
+        }
+        mock_parser.__getitem__ = lambda self, key: mock_parser.get(key.lower(), {})
+
+        # Setup STIX objects
+        converter.stix_objects["d3f:Technique1"] = {
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/t1"}
+            ],
+            "type": "course-of-action",
+        }
+        converter.stix_objects["d3f:Technique2"] = {
+            "id": "course-of-action--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/t2"}
+            ],
+            "type": "course-of-action",
+        }
+        converter.stix_objects["d3f:Tactic1"] = {
+            "id": "x-mitre-tactic--a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/tactic1"}
+            ],
+            "type": "x-mitre-tactic",
+        }
+        converter.stix_objects["d3f:Tactic2"] = {
+            "id": "x-mitre-tactic--f9e8d7c6-b5a4-4932-8170-a1b2c3d4e5f6",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/tactic2"}
+            ],
+            "type": "x-mitre-tactic",
+        }
+
+        result = converter._add_tactic_technique_relationships()
+
+        # Verify relationships were added to stix_objects
+        relationship_ids = [rel.id for rel in result]
+        assert set(relationship_ids) == {
+            "relationship--9a97c7ab-d2fd-5a04-839b-39259297f1ea",
+            "relationship--820f2f5e-1016-56a8-9108-a5c67f898b48",
+            "relationship--d1ac0619-95c7-5a2c-a2c7-e7f82dd46bfe",
+        }
+        for rel_id in relationship_ids:
+            assert rel_id in converter.stix_objects
+
+    def test_add_tactic_technique_relationships_missing_objects(
+        self, converter, mock_parser
+    ):
+        """Test that relationships are skipped when objects are missing"""
+        # Setup with some missing objects
+        converter.tactic_technique_map = {
+            "d3f:Tactic1": ["d3f:Technique1", "d3f:MissingTechnique"],
+            "d3f:MissingTactic": ["d3f:Technique1"],
+        }
+
+        mock_parser.objects_by_id = {
+            "d3f:technique1": {"@id": "d3f:Technique1", "rdfs:label": "Technique 1"},
+            "d3f:tactic1": {"@id": "d3f:Tactic1", "rdfs:label": "Tactic 1"},
+            "d3f:enables": {"@id": "d3f:enables", "d3f:definition": "x enables y"},
+        }
+        mock_parser.__getitem__ = lambda self, key: mock_parser.objects_by_id.get(
+            key.lower(), {}
+        )
+
+        # Only add STIX objects for existing items
+        converter.stix_objects["d3f:Technique1"] = {
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/t1"}
+            ],
+            "type": "course-of-action",
+        }
+        converter.stix_objects["d3f:Tactic1"] = {
+            "id": "x-mitre-tactic--a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6",
+            "external_references": [
+                {"source_name": "test", "url": "https://example.com/tactic1"}
+            ],
+            "type": "x-mitre-tactic",
+        }
+
+        result = converter._add_tactic_technique_relationships()
+
+        # Should only create 1 relationship (the valid one)
+        assert len(result) == 1
+        assert isinstance(result[0], Relationship)
+
     def test_convert_relationships(self, converter, mock_parser):
         """Test converting relationships"""
         source = {"@id": "d3f:Source", "rdfs:subClassOf": [{"@id": "d3f:Target"}]}
@@ -618,9 +764,7 @@ class TestD3FENDConverter:
 
         mock_parser.graph = [source]
         mock_parser.objects_by_id = {"d3f:target": target}
-        mock_parser.__getitem__ = lambda self, key: mock_parser.objects_by_id.get(
-            key.lower(), target
-        )
+        mock_parser.is_indirect_relation_of = MagicMock(return_value=False)
 
         converter.stix_objects["d3f:Source"] = {
             "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
@@ -640,6 +784,37 @@ class TestD3FENDConverter:
         result = converter._convert_relationships()
         assert isinstance(result, list)
 
+    def test_convert_relationships_skips_technique_enables(
+        self, converter, mock_parser
+    ):
+        """Test that d3f:enables relationships are skipped for techniques"""
+        technique = {
+            "@id": "d3f:Technique1",
+            "d3f:enables": [{"@id": "d3f:Tactic1"}],
+        }
+        tactic = {"@id": "d3f:Tactic1", "@type": "d3f:DefensiveTactic"}
+
+        mock_parser.graph = [technique]
+        mock_parser.objects_by_id = {"d3f:tactic1": tactic}
+        # Simulate that this is a technique (is_indirect_relation_of returns True)
+        mock_parser.is_indirect_relation_of = MagicMock(return_value=True)
+
+        converter.stix_objects["d3f:Technique1"] = {
+            "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
+            "external_references": [{"source_name": "test"}],
+            "type": "course-of-action",
+        }
+        converter.stix_objects["d3f:Tactic1"] = {
+            "id": "x-mitre-tactic--0ef0232d-97ee-47e5-8d83-f3aba6340fad",
+            "external_references": [{"source_name": "test"}],
+            "type": "x-mitre-tactic",
+        }
+
+        result = converter._convert_relationships()
+
+        # Should be empty since enables relationships for techniques are skipped
+        assert len(result) == 0
+
     def test_convert_relationships_with_owl_restriction(self, converter, mock_parser):
         """Test converting relationships with OWL restrictions"""
         source = {"@id": "d3f:Source", "rdfs:subClassOf": [{"@id": "d3f:Restriction"}]}
@@ -656,9 +831,6 @@ class TestD3FENDConverter:
             "d3f:restriction": restriction,
             "d3f:target": target,
         }
-        mock_parser.__getitem__ = lambda self, key: mock_parser.objects_by_id.get(
-            key.lower(), {}
-        )
 
         converter.stix_objects["d3f:Source"] = {
             "id": "course-of-action--f4eba4fb-578d-4a04-9c32-b00141c0e697",
