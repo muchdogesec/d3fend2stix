@@ -28,7 +28,7 @@ pip3 install -r requirements.txt
 ## Running the script
 
 ```shell
-python3 d3fend2stix.py
+python3 run_d3fend2stix.py
 ```
 
 ## Mappings
@@ -40,3 +40,7 @@ Can be viewed under `docs/stix-mapping.md`.
 * To generate STIX 2.1 Objects: [stix2 Python Lib](https://stix2.readthedocs.io/en/latest/)
 * The STIX 2.1 specification: [STIX 2.1 docs](https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html)
 * [MITRE d3fend site](https://d3fend.mitre.org/)
+
+## License
+
+[Apache 2.0](/LICENSE).
