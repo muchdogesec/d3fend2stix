@@ -82,7 +82,7 @@ class D3FENDConverter:
     def _convert_tactics(self) -> List[Any]:
         """Convert all D3FEND tactics"""
         tactics = []
-        for tactic_obj in self.parser.get_objects_by_type("d3f:DefensiveTactic"):
+        for tactic_obj in sorted(self.parser.get_objects_by_type("d3f:DefensiveTactic"), key=lambda x: x["d3f:display-order"]):
             stix_tactic = self.create_tactic(tactic_obj)
             self.stix_objects[tactic_obj["@id"]] = stix_tactic
             tactics.append(stix_tactic)

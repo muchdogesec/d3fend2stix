@@ -1,4 +1,5 @@
 """Miscellaneous helper functions"""
+import json
 import os
 import shutil
 import hashlib
@@ -61,3 +62,7 @@ def ensure_list(value):
         return []
     else:
         return [value]
+    
+def stix_as_dict(stix_object):
+    """Convert a STIX object to a dictionary"""
+    return json.loads(stix_serialize(stix_object))

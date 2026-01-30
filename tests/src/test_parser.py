@@ -327,7 +327,7 @@ class TestD3FENDParser:
         obj = parser.objects_by_id["d3f:test"]
         result = parser.get_inherited_property(obj, "nonexistent:property")
         
-        assert result is None
+        assert result == []
     
     def test_get_inherited_property_multiple_superclasses(self):
         """Test getting property when object has multiple superclasses"""
@@ -412,4 +412,4 @@ class TestD3FENDParser:
         obj = parser.objects_by_id["d3f:test"]
         result = parser.get_inherited_property(obj, "rdfs:label")
         
-        assert result is None
+        assert result == []

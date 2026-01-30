@@ -539,6 +539,7 @@ class TestD3FENDConverter:
             "@type": "d3f:DefensiveTactic",
             "rdfs:label": "Detect",
             "d3f:definition": "Detection",
+            "d3f:display-order": 1,
         }
 
         mock_parser.get_objects_by_type = MagicMock(return_value=[tactic])
@@ -547,6 +548,41 @@ class TestD3FENDConverter:
 
         assert len(result) == 1
         assert result[0].name == "Detect"
+
+    def test_convert_tactics_sorted_by_display_order(self, converter, mock_parser):
+        """Test that tactics are sorted by display-order"""
+        tactic1 = {
+            "@id": "d3f:Isolate",
+            "@type": "d3f:DefensiveTactic",
+            "rdfs:label": "Isolate",
+            "d3f:definition": "Isolation tactics",
+            "d3f:display-order": 3,
+        }
+        tactic2 = {
+            "@id": "d3f:Detect",
+            "@type": "d3f:DefensiveTactic",
+            "rdfs:label": "Detect",
+            "d3f:definition": "Detection tactics",
+            "d3f:display-order": 1,
+        }
+        tactic3 = {
+            "@id": "d3f:Harden",
+            "@type": "d3f:DefensiveTactic",
+            "rdfs:label": "Harden",
+            "d3f:definition": "Hardening tactics",
+            "d3f:display-order": 2,
+        }
+
+        # Return tactics in unsorted order
+        mock_parser.get_objects_by_type = MagicMock(
+            return_value=[tactic1, tactic2, tactic3]
+        )
+
+        result = converter._convert_tactics()
+
+        assert len(result) == 3
+        # Verify tactics are returned in sorted order by display-order
+        assert [tactic.name for tactic in result] == ["Detect", "Harden", "Isolate"]
 
     def test_convert_matrix(self, converter, mock_parser):
         """Test converting matrix"""
@@ -651,9 +687,16 @@ class TestD3FENDConverter:
             "@type": "d3f:DefensiveTactic",
             "rdfs:label": "Detect",
             "d3f:definition": "Detection",
+            "d3f:display-order": 1,
+        }
+        d3ftechnique = {
+            "@id": "d3f:DefensiveTechnique",
+            "@type": "owl:Class",
         }
 
-        mock_parser.graph = [technique, tactic]
+        mock_parser.graph = [technique, tactic, d3ftechnique]
+        for obj in mock_parser.graph:
+            mock_parser.add_object(obj)
         mock_parser.get_objects_by_type = MagicMock(return_value=[tactic])
         mock_parser.is_indirect_relation_of = MagicMock(return_value=True)
 

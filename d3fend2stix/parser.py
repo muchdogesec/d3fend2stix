@@ -41,17 +41,21 @@ class D3FENDParser:
         
         # Build index by @id for quick lookup
         for obj in self.graph:
-            lower_id = obj.get("@id", "").lower()
-            if lower_id in self.objects_by_id:
-                self.objects_by_id[lower_id] = merge_dicts(obj, self.objects_by_id[lower_id])
-            else:
-                self.objects_by_id[lower_id] = obj
+            self.add_object(obj)
         
         # Try to extract release date from version info
         self._extract_release_date()
         self._extract_relationship_types()
         
         logger.info(f"Loaded {len(self.graph)} objects from D3FEND data")
+
+    def add_object(self, obj: Dict[str, Any]):
+        """Add or update an object in the parser's index"""
+        lower_id = obj.get("@id", "").lower()
+        if lower_id in self.objects_by_id:
+            self.objects_by_id[lower_id] = merge_dicts(obj, self.objects_by_id[lower_id])
+        else:
+            self.objects_by_id[lower_id] = obj
 
     def __getitem__(self, key):
         key = key.lower()
