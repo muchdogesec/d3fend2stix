@@ -297,6 +297,8 @@ To support the ATT&CK navigator, we need to include some standard relationships.
 
 However if Sub-techniques -> Techniques, or Sub-techniques -> Sub-techniques we need to us the `relationship_type` = `subtechnique-of`. To ensure we don't lose the original definition, we should track the original relationship type in the description AND in external_references.
 
+We also link Sub-(Sub)-Techniques back to the Tactic using an enables type relationship.
+
 ### Relationship targets to artifacts
 
 In the case of artifacts e.g. for `d3f:File` (not tactics/techniques, e.g. `d3f:Detect`).
