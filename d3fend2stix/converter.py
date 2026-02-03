@@ -26,6 +26,7 @@ class D3FENDConverter:
         self.id_mapping = {}  # Maps D3FEND IDs to STIX IDs
         self.created_artifacts = set()  # Track created artifact indicators
         self.tactic_technique_map = defaultdict(list)  # Map tactic IDs to their techniques
+        self.other_relationships = []  # Store other relationships
 
     def convert(self) -> List[Any]:
         """
@@ -49,7 +50,6 @@ class D3FENDConverter:
 
         tech_tactic_relationships = self._add_tactic_technique_relationships()
         logger.info(f"Created {len(tech_tactic_relationships)} technique-tactic relationships")
-
 
         # Step 3: Create matrix with tactic references
         matrix = self._convert_matrix([t.id for t in tactics])
@@ -147,7 +147,7 @@ class D3FENDConverter:
         )
 
         return course_of_action
-    
+
     def _parse_tech_tactics(self, technique: Dict[str, Any]) -> List[Dict[str, str]]:
         """Parse kill chain phases from a technique object"""
         tactic_external_refs = []
@@ -171,7 +171,7 @@ class D3FENDConverter:
             if ref_id:
                 references.append({
                     "source_name": "rdfs-seeAlso",
-                    "url": ref_id
+                    "url": self.sanitize_url(ref_id)[0],
                 })
         # Add kb-reference entries
         kb_refs = ensure_list(obj.get("d3f:kb-reference"))
@@ -191,16 +191,11 @@ class D3FENDConverter:
         defined_by_refs = ensure_list(obj.get("rdfs:isDefinedBy"))
         for ref in defined_by_refs:
             ref_id = ref['@id'] if isinstance(ref, dict) else ref
-            if ref_id.startswith("http"):
+            sanitized_url, is_valid = self.sanitize_url(ref_id)
+            if is_valid:
                 references.append({
                     "source_name": "rdfs-defined-by",
-                    "url": ref_id,
-                })
-            elif ref_id.startswith("dbr:"):
-                dbr_id = ref_id[4:]
-                references.append({
-                    "source_name": "rdfs-defined-by",
-                    "url": f"http://dbpedia.org/resource/{dbr_id}"
+                    "url": sanitized_url,
                 })
             else:
                 references.append({
@@ -209,6 +204,15 @@ class D3FENDConverter:
                 })
 
         return references
+
+    @staticmethod
+    def sanitize_url(url: str) -> Tuple[str, bool]:
+        if url.startswith("http://") or url.startswith("https://"):
+            return url, True
+        elif url.startswith("dbr:"):
+            dbr_id = url[4:]
+            return f"http://dbpedia.org/resource/{dbr_id}", True
+        return url, False
 
     def create_tactic(self, tactic_obj: Dict[str, Any]) -> Any:
         """Create a D3FEND Tactic STIX object"""
@@ -299,7 +303,7 @@ class D3FENDConverter:
         if kb_article:
             description = f"{definition}\n\n{kb_article}"
         return description
-    
+
     def _add_tactic_technique_relationships(self):
         """Add relationships between tactics and techniques based on enables property"""
         relationships = []
@@ -330,13 +334,19 @@ class D3FENDConverter:
                 for target_id in targets:
                     relationship_type = rel_key
                     target_obj = self.parser[target_id["@id"]]
-                    if "owl:Restriction" in ensure_list(target_obj['@type']) and 'owl:someValuesFrom' in target_obj:
-                        relationship_type = target_obj["owl:onProperty"]["@id"]
-                        new_id = target_obj['owl:someValuesFrom']['@id']
-                        if new_id not in self.parser.objects_by_id:
-                            continue
-                        target_obj = self.parser[new_id]
+
                     if target_obj['@id'] not in self.stix_objects or graph_obj['@id'] not in self.stix_objects:
+                        if relationship_type != 'rdfs:subClassOf':
+                            self.other_relationships.append(
+                                dict(
+                                    source=graph_obj["@id"],
+                                    target=target_obj["@id"],
+                                    type=relationship_type,
+                                    description=self._get_relationship_description(
+                                        relationship_type, graph_obj, target_obj
+                                    ),
+                                )
+                            )
                         continue
                     stix_rel = self.create_relationship(graph_obj, target_obj, relationship_type)
                     if stix_rel:

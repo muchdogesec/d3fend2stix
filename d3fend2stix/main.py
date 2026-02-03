@@ -1,4 +1,6 @@
 """Main entry point for d3fend2stix"""
+import json
+from pathlib import Path
 import sys
 
 from d3fend2stix.stix_store import store_in_bundle
@@ -35,12 +37,16 @@ def main():
             stix_objects,
             filename="d3fend-bundle"
         )
+        rel_path = Path(config.stix2_bundles_folder) / "d3fend-external-relationships.json"
+        rel_path.write_text(json.dumps(converter.other_relationships, indent=4))
         
         logger.info("="*60)
         logger.info(f"Conversion Complete!")
         logger.info(f"Bundle ID: {bundle_id}")
         logger.info(f"Total objects: {len(stix_objects)}")
         logger.info(f"Bundle location: {config.stix2_bundles_folder}/d3fend-bundle.json")
+        logger.info(f"Total unprocessed refs: {len(converter.other_relationships)}")
+        logger.info(f"External refs location: {rel_path}")
         logger.info("="*60)
 
 
