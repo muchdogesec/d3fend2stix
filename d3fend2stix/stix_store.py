@@ -46,4 +46,4 @@ def store_in_bundle(stix_bundle_path: str, stix_objects: list, filename: str = N
     with open(stix_bundle_file, "w") as f:
         f.write(json.dumps(json.loads(bundle.serialize()), indent=4))
     
-    return bundle.id
+    return bundle.id, stix_bundle_file
