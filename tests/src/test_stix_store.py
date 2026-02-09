@@ -39,7 +39,7 @@ class TestStoreInBundle:
     def test_store_in_bundle_basic(self, sample_stix_objects):
         """Test basic bundle creation"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id = store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects)
             
             assert bundle_id.startswith("bundle--")
             assert os.path.exists(os.path.join(temp_dir, "d3fend-bundle.json"))
@@ -47,14 +47,14 @@ class TestStoreInBundle:
     def test_store_in_bundle_with_filename(self, sample_stix_objects):
         """Test bundle creation with custom filename"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id = store_in_bundle(temp_dir, sample_stix_objects, filename="custom")
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects, filename="custom")
             
             assert os.path.exists(os.path.join(temp_dir, "custom.json"))
     
     def test_store_in_bundle_with_json_extension(self, sample_stix_objects):
         """Test bundle creation with filename already having .json extension"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id = store_in_bundle(temp_dir, sample_stix_objects, filename="custom.json")
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects, filename="custom.json")
             
             assert os.path.exists(os.path.join(temp_dir, "custom.json"))
             # Should not create custom.json.json
@@ -64,7 +64,7 @@ class TestStoreInBundle:
         """Test that bundle creation creates directory if it doesn't exist"""
         with tempfile.TemporaryDirectory() as temp_dir:
             nested_dir = os.path.join(temp_dir, "nested", "path")
-            bundle_id = store_in_bundle(nested_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(nested_dir, sample_stix_objects)
             
             assert os.path.exists(nested_dir)
             assert os.path.exists(os.path.join(nested_dir, "d3fend-bundle.json"))
@@ -72,23 +72,23 @@ class TestStoreInBundle:
     def test_store_in_bundle_deterministic_id(self, sample_stix_objects):
         """Test that same objects produce same bundle ID"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id1 = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle1")
-            bundle_id2 = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle2")
+            bundle_id1, _ = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle1")
+            bundle_id2, _ = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle2")
             
             assert bundle_id1 == bundle_id2
     
     def test_store_in_bundle_different_objects(self, sample_stix_objects):
         """Test that different objects produce different bundle IDs"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id1 = store_in_bundle(temp_dir, sample_stix_objects[:1])
-            bundle_id2 = store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id1, _ = store_in_bundle(temp_dir, sample_stix_objects[:1])
+            bundle_id2, _ = store_in_bundle(temp_dir, sample_stix_objects)
             
             assert bundle_id1 != bundle_id2
     
     def test_store_in_bundle_file_content(self, sample_stix_objects):
         """Test that bundle file contains correct content"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id = store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects)
             
             bundle_file = os.path.join(temp_dir, "d3fend-bundle.json")
             with open(bundle_file, 'r') as f:
@@ -102,7 +102,7 @@ class TestStoreInBundle:
     def test_store_in_bundle_empty_objects(self):
         """Test bundle creation with empty object list"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id = store_in_bundle(temp_dir, [])
+            bundle_id, bundle_path = store_in_bundle(temp_dir, [])
             
             assert bundle_id.startswith("bundle--")
             assert os.path.exists(os.path.join(temp_dir, "d3fend-bundle.json"))
@@ -110,7 +110,7 @@ class TestStoreInBundle:
     def test_store_in_bundle_json_formatting(self, sample_stix_objects):
         """Test that bundle JSON is properly formatted with indentation"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects)
             
             bundle_file = os.path.join(temp_dir, "d3fend-bundle.json")
             with open(bundle_file, 'r') as f:
@@ -126,10 +126,10 @@ class TestStoreInBundle:
             bundle_file = os.path.join(temp_dir, "test-bundle.json")
             
             # Create initial bundle
-            bundle_id1 = store_in_bundle(temp_dir, sample_stix_objects[:1], filename="test-bundle")
+            bundle_id1, _ = store_in_bundle(temp_dir, sample_stix_objects[:1], filename="test-bundle")
             
             # Overwrite with different content
-            bundle_id2 = store_in_bundle(temp_dir, sample_stix_objects, filename="test-bundle")
+            bundle_id2, _ = store_in_bundle(temp_dir, sample_stix_objects, filename="test-bundle")
             
             # Read final content
             with open(bundle_file, 'r') as f:
@@ -139,12 +139,17 @@ class TestStoreInBundle:
             assert len(content["objects"]) >= len(sample_stix_objects)
     
     def test_store_in_bundle_returns_bundle_id(self, sample_stix_objects):
-        """Test that function returns the bundle ID"""
+        """Test that function returns the bundle ID and path"""
         with tempfile.TemporaryDirectory() as temp_dir:
             result = store_in_bundle(temp_dir, sample_stix_objects)
             
-            assert isinstance(result, str)
-            assert result.startswith("bundle--")
+            assert isinstance(result, tuple)
+            assert len(result) == 2
+            bundle_id, bundle_path = result
+            assert isinstance(bundle_id, str)
+            assert bundle_id.startswith("bundle--")
+            assert isinstance(bundle_path, str)
+            assert bundle_path.endswith(".json")
     
     @patch('d3fend2stix.stix_store.Bundle')
     def test_store_in_bundle_uses_allow_custom(self, mock_bundle, sample_stix_objects):
@@ -155,7 +160,7 @@ class TestStoreInBundle:
             mock_bundle_instance.id = "bundle--123"
             mock_bundle.return_value = mock_bundle_instance
             
-            store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects)
             
             # Check that Bundle was called with allow_custom=True
             call_kwargs = mock_bundle.call_args[1]
@@ -164,7 +169,7 @@ class TestStoreInBundle:
     def test_store_in_bundle_preserves_object_order(self, sample_stix_objects):
         """Test that objects are preserved in bundle"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            store_in_bundle(temp_dir, sample_stix_objects)
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects)
             
             bundle_file = os.path.join(temp_dir, "d3fend-bundle.json")
             with open(bundle_file, 'r') as f:
@@ -179,15 +184,15 @@ class TestStoreInBundle:
         """Test bundle creation with special characters in filename"""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Use simple valid filename
-            bundle_id = store_in_bundle(temp_dir, sample_stix_objects, filename="test_bundle-v1")
+            bundle_id, bundle_path = store_in_bundle(temp_dir, sample_stix_objects, filename="test_bundle-v1")
             
             assert os.path.exists(os.path.join(temp_dir, "test_bundle-v1.json"))
     
     def test_store_in_bundle_multiple_calls_same_dir(self, sample_stix_objects):
         """Test multiple bundle creations in same directory"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            bundle_id1 = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle1")
-            bundle_id2 = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle2")
+            bundle_id1, _ = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle1")
+            bundle_id2, _ = store_in_bundle(temp_dir, sample_stix_objects, filename="bundle2")
             
             assert os.path.exists(os.path.join(temp_dir, "bundle1.json"))
             assert os.path.exists(os.path.join(temp_dir, "bundle2.json"))

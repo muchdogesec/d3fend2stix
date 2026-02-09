@@ -6,176 +6,107 @@ from d3fend2stix.main import main
 
 class TestMain:
     """Tests for main function"""
+
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self):
+        """Setup common mocks for all tests"""
+        with (patch('d3fend2stix.main.Path') as mock_path,
+              patch('d3fend2stix.main.store_in_bundle') as mock_store,
+              patch('d3fend2stix.main.D3FENDConverter') as mock_converter_class,
+              patch('d3fend2stix.main.D3FENDParser') as mock_parser_class,
+              patch('d3fend2stix.main.clean_filesystem') as mock_clean,
+              patch('d3fend2stix.main.config') as mock_config):
+            self.mock_config = mock_config
+            self.mock_config.d3fend_json_file = "test.json"
+            self.mock_config.stix2_objects_folder = "/test/objects"
+            self.mock_config.stix2_bundles_folder = "/test/bundles"
+            self.mock_config.fs = MagicMock()
+            
+            self.mock_parser = MagicMock()
+            self.mock_parser.version = "1.3.0"
+            
+            self.mock_converter = MagicMock()
+            self.mock_converter.convert.return_value = []
+            self.mock_converter.other_relationships = []
+            
+            mock_converter_class.return_value = self.mock_converter
+            mock_parser_class.return_value = self.mock_parser
+            mock_store.return_value = ("bundle--test-123", "/test/bundles/test.json")
+
+            self.mock_clean = mock_clean
+            self.mock_converter_class = mock_converter_class
+            self.mock_parser_class = mock_parser_class
+            self.mock_store = mock_store
+            self.mock_path_cls = mock_path
+            yield
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_success_flow(self, mock_config, mock_clean, mock_parser_class, 
-                               mock_converter_class, mock_store):
+
+    def test_main_success_flow(self):
         """Test successful execution of main function"""
-        # Setup mocks
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
-        mock_stix_objects = [
-            {"id": "course-of-action--123", "type": "course-of-action"},
-            {"id": "indicator--456", "type": "indicator"}
-        ]
-        mock_converter.convert.return_value = mock_stix_objects
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--test-123"
         
         # Execute
         main()
         
         # Verify clean_filesystem was called
-        mock_clean.assert_called_once_with(mock_config.stix2_objects_folder)
+        self.mock_clean.assert_called_once_with(self.mock_config.stix2_objects_folder)
         
         # Verify parser was created and load_data called
-        mock_parser_class.assert_called_once_with(mock_config.d3fend_json_file)
-        mock_parser.load_data.assert_called_once()
+        self.mock_parser_class.assert_called_once_with(self.mock_config.d3fend_json_file)
+        self.mock_parser.load_data.assert_called_once()
         
         # Verify converter was created and convert called
-        mock_converter_class.assert_called_once_with(mock_parser)
-        mock_converter.convert.assert_called_once()
+        self.mock_converter_class.assert_called_once_with(self.mock_parser)
+        self.mock_converter.convert.assert_called_once()
         
         # Verify bundle was created
-        mock_store.assert_called_once_with(
-            mock_config.stix2_bundles_folder,
-            mock_stix_objects,
-            filename="d3fend-bundle"
+        self.mock_store.assert_called_once_with(
+            self.mock_config.stix2_bundles_folder,
+            self.mock_converter.convert.return_value,
+            filename="d3fend-v1_3_0-bundle"
         )
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_parser_step(self, mock_config, mock_clean, mock_parser_class,
-                              mock_converter_class, mock_store):
+    def test_main_parser_step(self):
         """Test that parser step is executed correctly"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
-        mock_converter.convert.return_value = []
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
-        
         main()
         
         # Verify parser was initialized with correct file
-        mock_parser_class.assert_called_once_with("test.json")
+        self.mock_parser_class.assert_called_once_with("test.json")
         # Verify load_data was called
-        mock_parser.load_data.assert_called_once()
+        self.mock_parser.load_data.assert_called_once()
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_converter_step(self, mock_config, mock_clean, mock_parser_class,
-                                 mock_converter_class, mock_store):
+    def test_main_converter_step(self):
         """Test that converter step is executed correctly"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
         test_objects = [{"id": "test-1"}]
-        mock_converter.convert.return_value = test_objects
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
+        self.mock_converter.convert.return_value = test_objects
         
         main()
         
         # Verify converter was initialized with parser
-        mock_converter_class.assert_called_once_with(mock_parser)
+        self.mock_converter_class.assert_called_once_with(self.mock_parser)
         # Verify convert was called
-        mock_converter.convert.assert_called_once()
+        self.mock_converter.convert.assert_called_once()
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_filesystem_storage(self, mock_config, mock_clean, mock_parser_class,
-                                     mock_converter_class, mock_store):
+    def test_main_filesystem_storage(self):
         """Test that main function works without filesystem storage (Step 3 is commented out)"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        
-        mock_fs = MagicMock()
-        mock_config.fs = mock_fs
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
         test_objects = [
             {"id": "obj-1", "type": "course-of-action"},
             {"id": "obj-2", "type": "indicator"}
         ]
-        mock_converter.convert.return_value = test_objects
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
+        self.mock_converter.convert.return_value = test_objects
         
         main()
         
         # Verify filesystem storage is not called (Step 3 is commented out)
-        assert mock_fs.add.call_count == 0
+        assert self.mock_config.fs.add.call_count == 0
         # Verify bundle is still created
-        mock_store.assert_called_once()
+        self.mock_store.assert_called_once()
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
     @patch('d3fend2stix.main.logger')
-    def test_main_filesystem_storage_error_handling(self, mock_logger, mock_config, 
-                                                    mock_clean, mock_parser_class,
-                                                    mock_converter_class, mock_store):
+    def test_main_filesystem_storage_error_handling(self, mock_logger):
         """Test that main completes even if filesystem is not used (Step 3 commented out)"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        
-        mock_fs = MagicMock()
-        mock_fs.add.side_effect = Exception("Storage error")
-        mock_config.fs = mock_fs
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
+        self.mock_config.fs.add.side_effect = Exception("Storage error")
         test_objects = [{"id": "obj-1", "type": "course-of-action"}]
-        mock_converter.convert.return_value = test_objects
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
+        self.mock_converter.convert.return_value = test_objects
         
         # Should not raise exception
         main()
@@ -184,60 +115,24 @@ class TestMain:
         # So no warning should be logged about storage errors
         assert mock_logger.warning.call_count == 0
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_bundle_creation(self, mock_config, mock_clean, mock_parser_class,
-                                  mock_converter_class, mock_store):
+    def test_main_bundle_creation(self):
         """Test that bundle is created with correct parameters"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
         test_objects = [{"id": "obj-1"}]
-        mock_converter.convert.return_value = test_objects
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--abc-123"
+        self.mock_converter.convert.return_value = test_objects
         
         main()
         
         # Verify store_in_bundle was called with correct arguments
-        mock_store.assert_called_once_with(
-            "/test/bundles",
+        self.mock_store.assert_called_once_with(
+            self.mock_config.stix2_bundles_folder,
             test_objects,
-            filename="d3fend-bundle"
+            filename="d3fend-v1_3_0-bundle"
         )
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
     @patch('d3fend2stix.main.logger')
-    def test_main_logs_progress(self, mock_logger, mock_config, mock_clean,
-                                mock_parser_class, mock_converter_class, mock_store):
+    def test_main_logs_progress(self, mock_logger):
         """Test that main function logs progress appropriately"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
-        mock_converter.convert.return_value = [{"id": "obj-1"}]
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
+        self.mock_converter.convert.return_value = [{"id": "obj-1"}]
         
         main()
         
@@ -246,75 +141,30 @@ class TestMain:
         # Should log multiple steps
         assert mock_logger.info.call_count >= 5
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_empty_objects(self, mock_config, mock_clean, mock_parser_class,
-                               mock_converter_class, mock_store):
+    def test_main_empty_objects(self):
         """Test main function handles empty object list"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
-        mock_converter.convert.return_value = []
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
-        
         # Should not raise exception
         main()
         
         # Bundle should still be created
-        mock_store.assert_called_once()
+        self.mock_store.assert_called_once()
     
-    @patch('d3fend2stix.main.store_in_bundle')
-    @patch('d3fend2stix.main.D3FENDConverter')
-    @patch('d3fend2stix.main.D3FENDParser')
-    @patch('d3fend2stix.main.clean_filesystem')
-    @patch('d3fend2stix.main.config')
-    def test_main_execution_order(self, mock_config, mock_clean, mock_parser_class,
-                                  mock_converter_class, mock_store):
+    def test_main_execution_order(self):
         """Test that main function executes steps in correct order"""
-        mock_config.d3fend_json_file = "test.json"
-        mock_config.stix2_objects_folder = "/test/objects"
-        mock_config.stix2_bundles_folder = "/test/bundles"
-        mock_config.fs = MagicMock()
-        
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        
-        mock_converter = MagicMock()
-        mock_converter.convert.return_value = [{"id": "obj-1"}]
-        mock_converter_class.return_value = mock_converter
-        
-        mock_store.return_value = "bundle--123"
+        self.mock_converter.convert.return_value = [{"id": "obj-1"}]
         
         # Create a mock manager to track call order
         manager = MagicMock()
-        manager.attach_mock(mock_clean, 'clean')
-        manager.attach_mock(mock_parser_class, 'parser_class')
-        manager.attach_mock(mock_converter_class, 'converter_class')
-        manager.attach_mock(mock_store, 'store')
+        manager.attach_mock(self.mock_clean, 'clean')
+        manager.attach_mock(self.mock_parser_class, 'parser_class')
+        manager.attach_mock(self.mock_converter_class, 'converter_class')
+        manager.attach_mock(self.mock_store, 'store')
         
         main()
-        
         # Verify calls were made in order
         expected_calls = [
-            call.clean(mock_config.stix2_objects_folder),
-            call.parser_class(mock_config.d3fend_json_file),
-            call.converter_class(mock_parser),
-            call.store(mock_config.stix2_bundles_folder, [{"id": "obj-1"}], filename="d3fend-bundle")
+            call.clean(self.mock_config.stix2_objects_folder),
+            call.parser_class(self.mock_config.d3fend_json_file),
+            call.converter_class(self.mock_parser),
+            call.store(self.mock_config.stix2_bundles_folder, [{"id": "obj-1"}], filename="d3fend-bundle")
         ]
-        
-        # Check that key operations happened
-        manager.clean.assert_called()
-        manager.parser_class.assert_called()
-        manager.converter_class.assert_called()
-        manager.store.assert_called()

@@ -104,15 +104,12 @@ class D3FENDConverter:
         technique_id_raw = technique_obj["@id"]
         technique_id = generate_stix_id("course-of-action", technique_id_raw)
 
-        # Get external ID
-        external_id = technique_obj.get("d3f:d3fend-id", technique_id_raw)
-
         # Build external references
         external_refs = [
             {
                 "source_name": "mitre-d3fend",
                 "url": f"https://d3fend.mitre.org/technique/{technique_id_raw}",
-                "external_id": external_id,
+                "external_id": self.get_d3fend_id(technique_obj),
             },
             *self._extract_references(technique_obj)
         ]
@@ -232,7 +229,7 @@ class D3FENDConverter:
                 {
                     "source_name": "mitre-d3fend",
                     "url": f"https://d3fend.mitre.org/tactic/{tactic_id_raw}",
-                    "external_id": tactic_id_raw,
+                    "external_id": self.get_d3fend_id(tactic_obj),
                 }
             ],
             object_marking_refs=config.marking_refs,
@@ -339,8 +336,8 @@ class D3FENDConverter:
                         if relationship_type != 'rdfs:subClassOf':
                             self.other_relationships.append(
                                 dict(
-                                    source=graph_obj["@id"],
-                                    target=target_obj["@id"],
+                                    source=self.get_d3fend_id(graph_obj),
+                                    target=self.get_d3fend_id(target_obj),
                                     type=relationship_type,
                                     description=self._get_relationship_description(
                                         relationship_type, graph_obj, target_obj
@@ -442,7 +439,7 @@ class D3FENDConverter:
                 {
                     "source_name": "mitre-d3fend",
                     "url": f"https://d3fend.mitre.org/dao/artifact/{artifact_id_raw}",
-                    "external_id": artifact_id_raw
+                    "external_id": self.get_d3fend_id(artifact_obj),
                 },
                 *self._extract_references(artifact_obj)
             ],
@@ -451,3 +448,8 @@ class D3FENDConverter:
         )
 
         return indicator
+    
+    @staticmethod
+    def get_d3fend_id(obj: Dict[str, Any]) -> str:
+        """Extract D3FEND ID from an object"""
+        return obj.get("d3f:d3fend-id", obj["@id"])
