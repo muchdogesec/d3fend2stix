@@ -74,15 +74,9 @@ class D3FENDParser:
 
     def _extract_relationship_types(self):
         for obj in self.graph:
-            onP = ensure_list(obj.get("owl:onProperty", []))
-            for prop in onP:
-                prop_id = prop["@id"]
-                if prop_id not in self.objects_by_id:
-                    continue
-                prop_decl = self.objects_by_id[prop_id]
-                prop_type = prop_decl.get("@type", [])
-                if self.is_indirect_relation_of("rdfs:subPropertyOf", prop_decl, "d3f:may-be-associated-with"):
-                    self.relationship_types[prop_id] = prop_id.split(":")[-1]
+            if self.is_indirect_relation_of("rdfs:subPropertyOf", obj, "d3f:may-be-associated-with"):
+                self.relationship_types[obj["@id"]] = obj['rdfs:label']
+
 
     def get_objects_by_type(self, type_value: str) -> List[Dict[str, Any]]:
         """Get all objects with a specific @type"""
