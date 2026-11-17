@@ -32,7 +32,7 @@ class Config:
     
     # Data paths
     data_path = REPO_FOLDER / "data"
-    d3fend_json_file: str = str(data_path / "d3fend-v1_3_0.json")
+    d3fend_json_file: str = str(data_path / "d3fend-v1_6_0.json")
     
     stix2_objects_folder: str = str(REPO_FOLDER / "stix2_objects")
     stix2_bundles_folder: str = str(REPO_FOLDER / "stix2_bundles")

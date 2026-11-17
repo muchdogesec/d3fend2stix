@@ -104,7 +104,7 @@ class D3FENDParser:
                 subclass_id = subclass["@id"]
                 if subclass_id in parent_id:
                     return True
-                subclass_obj = self[subclass_id]
+                subclass_obj = self.get(subclass_id)
                 if subclass_obj:
                     to_visit.append(subclass_obj)
         
